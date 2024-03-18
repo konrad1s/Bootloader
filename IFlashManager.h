@@ -13,9 +13,9 @@ public:
     };
 
     virtual ~IFlashManager() = default;
-    virtual state FlashErase() = 0;
-    virtual state FlashWrite(uint32_t start_addr, const void *data, size_t size) = 0;
-    virtual state FlashRead() = 0;
-    virtual state FlashUnlock() = 0;
-    virtual state FlashLock() = 0;
+    virtual state Erase() = 0;
+    virtual state Write(uint32_t start_addr, const void *data, size_t size) = 0;
+    virtual state Read() = 0;
+    virtual state Unlock() = 0;
+    virtual state Lock() = 0;
 };

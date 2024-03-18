@@ -1,26 +1,26 @@
 #include "FlashManager.h"
 
-FlashManager::state FlashManager::FlashErase()
+FlashManager::state FlashManager::Erase()
 {
     return state::eOk;
 }
 
-FlashManager::state FlashManager::FlashWrite(uint32_t start_addr, const void *data, size_t size)
+FlashManager::state FlashManager::Write(uint32_t start_addr, const void *data, size_t size)
 {
     return state::eOk;
 }
 
-FlashManager::state FlashManager::FlashRead()
+FlashManager::state FlashManager::Read()
 {
     return state::eOk;
 }
 
-FlashManager::state FlashManager::FlashUnlock()
+FlashManager::state FlashManager::Unlock()
 {
     return state::eOk;
 }
 
-FlashManager::state FlashManager::FlashLock()
+FlashManager::state FlashManager::Lock()
 {
     return state::eOk;
 }
