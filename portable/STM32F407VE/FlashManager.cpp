@@ -1,4 +1,5 @@
 #include "FlashManager.h"
+#include "stm32f4xx_hal.h"
 
 FlashManager::state FlashManager::Erase()
 {
@@ -17,10 +18,10 @@ FlashManager::state FlashManager::Read()
 
 FlashManager::state FlashManager::Unlock()
 {
-    return state::eOk;
+    return (HAL_FLASH_Unlock() == HAL_OK) ? state::eOk : state::eNotOk;
 }
 
 FlashManager::state FlashManager::Lock()
 {
-    return state::eOk;
+    return (HAL_FLASH_Lock() == HAL_OK) ? state::eOk : state::eNotOk;
 }
