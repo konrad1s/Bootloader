@@ -40,5 +40,5 @@ private:
     void getFirmwareVersion();
 
     void boot();
-    retStatus extractAddressAndData(const uint8_t *payload, size_t length, uint32_t *address, const uint8_t **dataStart);
+    retStatus extractAddress(const uint8_t *payload, size_t length, uint32_t *address);
 };

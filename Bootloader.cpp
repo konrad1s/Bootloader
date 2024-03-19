@@ -1,16 +1,8 @@
 #include "Bootloader.h"
 
-Bootloader::retStatus Bootloader::extractAddressAndData(const uint8_t *payload, size_t length,
-                                                        uint32_t *address, const uint8_t **dataStart)
+Bootloader::retStatus Bootloader::extractAddress(const uint8_t *payload, size_t length, uint32_t *address)
 {
-    if (length < sizeof(uint32_t))
-    {
-        return retStatus::eNotOk;
-    }
-
-    memcpy(&address, payload, sizeof(uint32_t));
-    *dataStart = payload + sizeof(uint32_t);
-
+    memcpy(address, payload, sizeof(uint32_t));
     return retStatus::eOk;
 }
 
@@ -60,10 +52,9 @@ void Bootloader::handleValidPacket(const beecom::Packet &packet)
 {
     const uint8_t *dataStart = nullptr;
     uint32_t address = 0;
-    retStatus extStatus;
 
     const enum class packetType {
-        prepareFlash = 0x10,
+        prepareFlash = 0U,
         eraseData,
         flashData,
         eraseMac,
@@ -85,12 +76,8 @@ void Bootloader::handleValidPacket(const beecom::Packet &packet)
         break;
     case packetType::flashData:
     case packetType::flashMac:
-        extStatus = extractAddressAndData(packet.payload, packet.header.length, &address, &dataStart);
-        if (extStatus != retStatus::eOk || dataStart == nullptr)
-        {
-            sendResponse(false);
-            return;
-        }
+        (void)extractAddress(packet.payload, packet.header.length, &address);
+        dataStart = packet.payload + sizeof(uint32_t);
         fStatus = flashManager_.Write(address, dataStart, dataSize);
         break;
     case packetType::validateFlash:
