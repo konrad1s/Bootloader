@@ -54,23 +54,13 @@ void Bootloader::handleValidPacket(const beecom::Packet &packet)
     uint32_t startAddress;
     uint32_t endAddress;
 
-    const enum class packetType {
-        prepareFlash = 0U,
-        eraseData,
-        flashData,
-        eraseMac,
-        flashMac,
-        validateFlash
-    } pt = static_cast<packetType>(packet.header.type);
+    const packetType pt = static_cast<packetType>(packet.header.type);
 
     IFlashManager::state fStatus = IFlashManager::state::eNotOk;
     size_t dataSize = packet.header.length - sizeof(uint32_t);
 
     switch (pt)
     {
-    case packetType::prepareFlash:
-        fStatus = flashManager_.Unlock();
-        break;
     case packetType::eraseData:
     case packetType::eraseMac:
         (void)extractAddress(packet.payload, &startAddress);

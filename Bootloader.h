@@ -15,6 +15,15 @@ public:
         UPDATE_COMPLETED
     };
 
+    enum class packetType {
+        invalidPacket,
+        eraseData,
+        flashData,
+        eraseMac,
+        flashMac,
+        validateFlash
+    };
+
     enum class retStatus
     {
         eOk,
