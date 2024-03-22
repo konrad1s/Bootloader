@@ -1,9 +1,29 @@
 #include "FlashManager.h"
 #include "stm32f4xx_hal.h"
 
-FlashManager::state FlashManager::Erase()
+FlashManager::state FlashManager::Erase(uint32_t startAddress, uint32_t endAddress)
 {
-    return state::eOk;
+    if ((startAddress % FLASH_PAGE_SIZE) != 0U || (endAddress % FLASH_PAGE_SIZE) != 0U)
+    {
+        return state::eNotOk;
+    }
+
+    const uint32_t sectorsNumber = (endAddress - startAddress) / FLASH_PAGE_SIZE;
+    const uint32_t sectorStart = startAddress / FLASH_PAGE_SIZE;
+
+    uint32_t sectorError = 0xFFFFFFFFU;
+    FLASH_EraseInitTypeDef eraseData{
+        .TypeErase = FLASH_TYPEERASE_SECTORS,
+        .Banks = FLASH_BANK_1,
+        .Sector = sectorStart,
+        .NbSectors = sectorsNumber,
+        .VoltageRange = FLASH_VOLTAGE_RANGE_3};
+
+    Unlock();
+    HAL_StatusTypeDef status = HAL_FLASHEx_Erase(&eraseData, &sectorError);
+    Lock();
+
+    return (status == HAL_OK) ? state::eOk : state::eNotOk;
 }
 
 FlashManager::state FlashManager::Write(uint32_t startAddress, const void *data, size_t size)
