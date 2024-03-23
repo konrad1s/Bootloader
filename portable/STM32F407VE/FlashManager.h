@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IFlashManager.h"
+#include "FlashMapping.h"
 
 class FlashManager : public IFlashManager
 {
@@ -13,5 +14,6 @@ public:
     state Lock() override;
 
 private:
-    const uint32_t FLASH_PAGE_SIZE = 2048U;
+    static const uint32_t FLASH_PAGE_SIZE = 2048U;
+    FlashMapping flashMap_;
 };
