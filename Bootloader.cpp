@@ -15,34 +15,21 @@ void Bootloader::setupPacketHandler()
         if (crcValid)
             handleValidPacket(packet);
         else
-            handleInvalidPacket();
+            sendResponse(false, packetType::invalidPacket);
     };
 
     beecom_.setPacketHandler(packetHandler);
 }
 
-void Bootloader::handleInvalidPacket()
+void Bootloader::sendResponse(bool success, packetType type)
 {
-    constexpr uint8_t notAckValue = 0xAA;
-    beecom::Packet packet;
-
-    packet.header.sop = 0xA5;
-    packet.header.type = 0x02;
-    packet.header.length = 1;
-    packet.payload[0] = notAckValue;
-
-    beecom_.send(packet);
-}
-
-void Bootloader::sendResponse(bool success)
-{
-    constexpr uint8_t ackValue = 0x55;
-    constexpr uint8_t notAckValue = 0xAA;
+    const uint8_t ackValue = 0x55U;
+    const uint8_t notAckValue = 0xAAU;
 
     beecom::Packet responsePacket;
-    responsePacket.header.sop = 0xA5;
-    responsePacket.header.type = 0x02;
-    responsePacket.header.length = 1;
+    responsePacket.header.sop = 0xA5U;
+    responsePacket.header.type = static_cast<uint8_t>(type);
+    responsePacket.header.length = 1U;
     responsePacket.payload[0] = success ? ackValue : notAckValue;
 
     beecom_.send(responsePacket);
@@ -80,5 +67,5 @@ void Bootloader::handleValidPacket(const beecom::Packet &packet)
         break;
     }
 
-    sendResponse(fStatus == IFlashManager::state::eOk);
+    sendResponse(fStatus == IFlashManager::state::eOk, pt);
 }

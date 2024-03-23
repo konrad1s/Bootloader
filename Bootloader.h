@@ -42,9 +42,8 @@ private:
     BootState state;
 
     void setupPacketHandler();
-    void handleInvalidPacket();
     void handleValidPacket(const beecom::Packet &packet);
-    void sendResponse(bool success);
+    void sendResponse(bool success, packetType type);
 
     void getFirmwareVersion();
 
