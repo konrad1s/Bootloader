@@ -62,7 +62,8 @@ void Bootloader::handleValidPacket(const beecom::Packet &packet)
         fStatus = flashManager_.Write(startAddress, dataStart, dataSize);
         break;
     case packetType::validateFlash:
-        fStatus = flashManager_.Lock();
+        /* TODO: dummy */
+        appJumper.jumpToApplication();
         break;
     default:
         break;

@@ -2,6 +2,7 @@
 
 #include "BeeCom.h"
 #include "IFlashManager.h"
+#include "AppJumper.h"
 
 class Bootloader
 {
@@ -15,7 +16,8 @@ public:
         UPDATE_COMPLETED
     };
 
-    enum class packetType {
+    enum class packetType
+    {
         invalidPacket,
         flashStart,
         flashData,
@@ -38,7 +40,8 @@ public:
 
 private:
     IFlashManager &flashManager_;
-    BootState state;
+    BootState state{BootState::IDLE};
+    AppJumper appJumper;
 
     void setupPacketHandler();
     void handleValidPacket(const beecom::Packet &packet);
