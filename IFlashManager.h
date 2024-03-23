@@ -13,6 +13,12 @@ public:
         eNotOk
     };
 
+    struct sectorRange
+    {
+        uint32_t startSector;
+        uint32_t sectorCount;
+    };
+
     virtual ~IFlashManager() = default;
     virtual state Erase(uint32_t startAddress, uint32_t endAddress) = 0;
     virtual state Write(uint32_t startAddress, const void *data, size_t size) = 0;
