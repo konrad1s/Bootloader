@@ -14,8 +14,6 @@ public:
     state Lock() override;
 
 private:
-    FlashMapping flashMap_;
-
     static constexpr sectorRange GetSectorRange(uint32_t startAddress, uint32_t endAddress);
     state ToggleFlashLock(bool lock);
 };

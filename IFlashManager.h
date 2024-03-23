@@ -2,7 +2,7 @@
 
 #include <cstddef>
 #include <stdint.h>
-#include "IFlashMapping.h"
+#include "FlashMapping.h"
 
 class IFlashManager
 {

@@ -48,11 +48,8 @@ void Bootloader::handleValidPacket(const beecom::Packet &packet)
 
     switch (pt)
     {
-    case packetType::eraseData:
-    case packetType::eraseMac:
-        (void)extractAddress(packet.payload, &startAddress);
-        (void)extractAddress(packet.payload + sizeof(startAddress), &endAddress);
-        fStatus = flashManager_.Erase(startAddress, endAddress);
+    case packetType::flashStart:
+        fStatus = flashManager_.Erase(FlashMapping::appStartAddress, FlashMapping::appEndAddress);
         break;
     case packetType::flashData:
     case packetType::flashMac:

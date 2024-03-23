@@ -17,9 +17,8 @@ public:
 
     enum class packetType {
         invalidPacket,
-        eraseData,
+        flashStart,
         flashData,
-        eraseMac,
         flashMac,
         validateFlash
     };
