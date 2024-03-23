@@ -2,7 +2,11 @@
 
 Bootloader::retStatus Bootloader::extractAddress(const uint8_t *payload, uint32_t *address)
 {
-    memcpy(address, payload, sizeof(uint32_t));
+    *address = (static_cast<uint32_t>(payload[0]) << 24U) |
+               (static_cast<uint32_t>(payload[1]) << 16U) |
+               (static_cast<uint32_t>(payload[2]) << 8U) |
+               static_cast<uint32_t>(payload[3]);
+
     return retStatus::eOk;
 }
 
