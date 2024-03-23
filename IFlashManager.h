@@ -22,7 +22,7 @@ public:
     virtual ~IFlashManager() = default;
     virtual state Erase(uint32_t startAddress, uint32_t endAddress) = 0;
     virtual state Write(uint32_t startAddress, const void *data, size_t size) = 0;
-    virtual state Read() = 0;
+    virtual state Read(uint32_t startAddress, void* buffer, size_t size) = 0;
     virtual state Unlock() = 0;
     virtual state Lock() = 0;
 };

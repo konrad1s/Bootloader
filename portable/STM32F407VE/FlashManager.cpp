@@ -1,5 +1,6 @@
 #include "FlashManager.h"
 #include "stm32f4xx_hal.h"
+#include <cstring>
 
 namespace FlashConstants
 {
@@ -121,9 +122,11 @@ FlashManager::state FlashManager::Write(uint32_t startAddress, const void *data,
     return state::eOk;
 }
 
-FlashManager::state FlashManager::Read()
+FlashManager::state FlashManager::Read(uint32_t startAddress, void* buffer, size_t size)
 {
-    return state::eNotOk;
+    std::memcpy(buffer, reinterpret_cast<const void*>(startAddress), size);
+
+    return state::eOk;
 }
 
 FlashManager::state FlashManager::Unlock()
