@@ -19,10 +19,15 @@ public:
     enum class packetType
     {
         invalidPacket,
+
         flashStart,
         flashData,
         flashMac,
-        validateFlash
+        validateFlash,
+
+        getBootloaderVersion,
+        getFirmwareVersion,
+        getFirmawareSignature,
     };
 
     enum class retStatus
@@ -45,7 +50,8 @@ private:
 
     void setupPacketHandler();
     void handleValidPacket(const beecom::Packet &packet);
-    void sendResponse(bool success, packetType type);
+    void handleReadDataRequest(packetType type);
+    void sendResponse(bool success, packetType type, const uint8_t *data = nullptr, size_t dataSize = 0);
 
     void getFirmwareVersion();
 

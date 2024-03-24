@@ -25,7 +25,7 @@ void Bootloader::setupPacketHandler()
     beecom_.setPacketHandler(packetHandler);
 }
 
-void Bootloader::sendResponse(bool success, packetType type)
+void Bootloader::sendResponse(bool success, packetType type, const uint8_t *data, size_t dataSize)
 {
     const uint8_t ackValue = 0x55U;
     const uint8_t notAckValue = 0xAAU;
@@ -33,8 +33,13 @@ void Bootloader::sendResponse(bool success, packetType type)
     beecom::Packet responsePacket;
     responsePacket.header.sop = 0xA5U;
     responsePacket.header.type = static_cast<uint8_t>(type);
-    responsePacket.header.length = 1U;
+    responsePacket.header.length = 1U + dataSize;
     responsePacket.payload[0] = success ? ackValue : notAckValue;
+
+    if (data != nullptr && dataSize > 0)
+    {
+        std::memcpy(responsePacket.payload + 1, data, dataSize);
+    }
 
     beecom_.send(responsePacket);
 }
@@ -43,10 +48,7 @@ void Bootloader::handleValidPacket(const beecom::Packet &packet)
 {
     const uint8_t *dataStart = nullptr;
     uint32_t startAddress;
-    uint32_t endAddress;
-
     const packetType pt = static_cast<packetType>(packet.header.type);
-
     IFlashManager::state fStatus = IFlashManager::state::eNotOk;
     size_t dataSize = packet.header.length - sizeof(uint32_t);
 
@@ -65,9 +67,40 @@ void Bootloader::handleValidPacket(const beecom::Packet &packet)
         /* TODO: dummy */
         appJumper.jumpToApplication();
         break;
+    case packetType::getFirmwareVersion:
+    case packetType::getFirmawareSignature:
+    case packetType::getBootloaderVersion:
+        handleReadDataRequest(static_cast<packetType>(packet.header.type));
+        return;
     default:
         break;
     }
 
     sendResponse(fStatus == IFlashManager::state::eOk, pt);
+}
+
+void Bootloader::handleReadDataRequest(packetType type)
+{
+    uint8_t dataBuffer[FlashMapping::maxDataSize];
+    size_t dataSize = 0;
+
+    switch (type)
+    {
+    case packetType::getFirmwareVersion:
+        flashManager_.Read(FlashMapping::appVersionAddress, dataBuffer, FlashMapping::appVersionSize);
+        dataSize = FlashMapping::appVersionSize;
+        break;
+    case packetType::getFirmawareSignature:
+        flashManager_.Read(FlashMapping::appSignatureAddress, dataBuffer, FlashMapping::appSignatureSize);
+        dataSize = FlashMapping::appSignatureSize;
+        break;
+    case packetType::getBootloaderVersion:
+        dataSize = 0;
+        break;
+    default:
+        sendResponse(false, type);
+        return;
+    }
+
+    sendResponse(true, type, dataBuffer, dataSize);
 }
