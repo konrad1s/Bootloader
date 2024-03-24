@@ -3,6 +3,7 @@
 #include "BeeCom.h"
 #include "IFlashManager.h"
 #include "AppJumper.h"
+#include "SecureBoot.h"
 
 class Bootloader
 {
@@ -26,8 +27,8 @@ public:
         validateFlash,
 
         getBootloaderVersion,
-        getFirmwareVersion,
-        getFirmawareSignature,
+        getAppVersion,
+        getAppSignature,
     };
 
     enum class retStatus
@@ -44,9 +45,12 @@ public:
     beecom::BeeCOM &beecom_;
 
 private:
+    constexpr static uint8_t waitForBootActionMs = 50U;
+
     IFlashManager &flashManager_;
     BootState state{BootState::IDLE};
     AppJumper appJumper;
+    SecureBoot secureBoot;
 
     void setupPacketHandler();
     void handleValidPacket(const beecom::Packet &packet);

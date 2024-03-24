@@ -67,8 +67,8 @@ void Bootloader::handleValidPacket(const beecom::Packet &packet)
         /* TODO: dummy */
         appJumper.jumpToApplication();
         break;
-    case packetType::getFirmwareVersion:
-    case packetType::getFirmawareSignature:
+    case packetType::getAppVersion:
+    case packetType::getAppSignature:
     case packetType::getBootloaderVersion:
         handleReadDataRequest(static_cast<packetType>(packet.header.type));
         return;
@@ -86,11 +86,11 @@ void Bootloader::handleReadDataRequest(packetType type)
 
     switch (type)
     {
-    case packetType::getFirmwareVersion:
+    case packetType::getAppVersion:
         flashManager_.Read(FlashMapping::appVersionAddress, dataBuffer, FlashMapping::appVersionSize);
         dataSize = FlashMapping::appVersionSize;
         break;
-    case packetType::getFirmawareSignature:
+    case packetType::getAppSignature:
         flashManager_.Read(FlashMapping::appSignatureAddress, dataBuffer, FlashMapping::appSignatureSize);
         dataSize = FlashMapping::appSignatureSize;
         break;
@@ -103,4 +103,29 @@ void Bootloader::handleReadDataRequest(packetType type)
     }
 
     sendResponse(true, type, dataBuffer, dataSize);
+}
+
+void Bootloader::boot()
+{
+    auto startTime = HAL_GetTick();
+
+    while (startTime + waitForBootActionMs > HAL_GetTick())
+    {
+        if (beecom_.receive())
+        {
+            startTime = HAL_GetTick();
+        }
+    }
+
+    if (SecureBoot::retStatus::firmwareValid == secureBoot.validateFirmware())
+    {
+        appJumper.jumpToApplication();
+    }
+    else
+    {
+        while (true)
+        {
+            beecom_.receive();
+        }
+    }
 }
