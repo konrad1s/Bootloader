@@ -111,17 +111,18 @@ void Bootloader::boot()
 
     while (startTime + waitForBootActionMs > HAL_GetTick())
     {
-        if (beecom_.receive())
+        /* TODO: Add return value receive */
+        beecom_.receive();
         {
-            startTime = HAL_GetTick();
+            // startTime = HAL_GetTick();
         }
     }
 
-    if (SecureBoot::retStatus::firmwareValid == secureBoot.validateFirmware())
+    // if (SecureBoot::retStatus::firmwareValid == secureBoot.validateFirmware())
     {
         appJumper.jumpToApplication();
     }
-    else
+    // else
     {
         while (true)
         {

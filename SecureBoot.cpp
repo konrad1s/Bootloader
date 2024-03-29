@@ -2,33 +2,63 @@
 
 SecureBoot::SecureBoot()
 {
-    // mbedtls_pk_init(&pk_ctx);
-    // mbedtls_ctr_drbg_init(&ctr_drbg);
-    // mbedtls_entropy_init(&entropy);
+    mbedtls_pk_init(&pk_ctx);
 }
 
 SecureBoot::~SecureBoot()
 {
-    // mbedtls_pk_free(&pk_ctx);
-    // mbedtls_ctr_drbg_free(&ctr_drbg);
-    // mbedtls_entropy_free(&entropy);
+    mbedtls_pk_free(&pk_ctx);
+}
+
+bool SecureBoot::calculateHash(const unsigned char *data, size_t data_len, unsigned char *hash, size_t *hash_len)
+{
+    if (*hash_len < 32)
+    {
+        return false;
+    }
+
+    mbedtls_sha256_context sha256_ctx;
+    mbedtls_sha256_init(&sha256_ctx);
+    if (mbedtls_sha256_starts(&sha256_ctx, 0) != 0)
+    {
+        return false;
+    }
+    if (mbedtls_sha256_update(&sha256_ctx, data, data_len) != 0)
+    {
+        return false;
+    }
+    if (mbedtls_sha256_finish(&sha256_ctx, hash) != 0)
+    {
+        return false;
+    }
+
+    *hash_len = 32;
+    return true;
 }
 
 SecureBoot::retStatus SecureBoot::validateFirmware(const unsigned char *public_key, size_t public_key_len,
                                                    const unsigned char *signature, size_t sig_len,
-                                                   const unsigned char *hash, size_t hash_len)
+                                                   const unsigned char *data, size_t data_len)
 {
-    // int ret = mbedtls_pk_parse_public_key(&pk_ctx, public_key, public_key_len);
-    // if (ret != 0)
-    //     return retStatus::firmwareCorrupted;
+    unsigned char hash[32];
+    size_t hash_len = sizeof(hash);
 
-    // ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
-    // if (ret != 0)
-    //     return retStatus::firmwareCorrupted;
+    if (!calculateHash(data, data_len, hash, &hash_len))
+    {
+        return retStatus::firmwareCorrupted;
+    }
 
-    // ret = mbedtls_pk_verify(&pk_ctx, MBEDTLS_MD_SHA256, hash, hash_len, signature, sig_len);
-    // if (ret == 0)
-    //     return retStatus::firmwareValid;
-    // else
-    //     return retStatus::firmwareInvalid;
+    if (mbedtls_pk_parse_public_key(&pk_ctx, public_key, public_key_len) != 0)
+    {
+        return retStatus::firmwareInvalid;
+    }
+
+    if (mbedtls_pk_verify(&pk_ctx, MBEDTLS_MD_SHA256, hash, hash_len, signature, sig_len) == 0)
+    {
+        return retStatus::firmwareValid;
+    }
+    else
+    {
+        return retStatus::firmwareInvalid;
+    }
 }
