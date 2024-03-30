@@ -64,7 +64,16 @@ void Bootloader::handleValidPacket(const beecom::Packet &packet)
         fStatus = flashManager_.Write(startAddress, dataStart, dataSize);
         break;
     case packetType::validateFlash:
-        /* TODO: dummy */
+    {
+        constexpr size_t appSize = FlashMapping::appEndAddress - FlashMapping::appStartAddress;
+
+        secureBoot.validateFirmware(packet.payload,
+                                    packet.header.length,
+                                    reinterpret_cast<const unsigned char *>(FlashMapping::appStartAddress),
+                                    appSize);
+        break;
+    }
+
         appJumper.jumpToApplication();
         break;
     case packetType::getAppVersion:
