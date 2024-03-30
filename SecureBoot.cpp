@@ -36,8 +36,7 @@ bool SecureBoot::calculateHash(const unsigned char *data, size_t data_len, unsig
     return true;
 }
 
-SecureBoot::retStatus SecureBoot::validateFirmware(const unsigned char *public_key, size_t public_key_len,
-                                                   const unsigned char *signature, size_t sig_len,
+SecureBoot::retStatus SecureBoot::validateFirmware(const unsigned char *signature, size_t sig_len,
                                                    const unsigned char *data, size_t data_len)
 {
     unsigned char hash[32];
@@ -48,7 +47,7 @@ SecureBoot::retStatus SecureBoot::validateFirmware(const unsigned char *public_k
         return retStatus::firmwareCorrupted;
     }
 
-    if (mbedtls_pk_parse_public_key(&pk_ctx, public_key, public_key_len) != 0)
+    if (mbedtls_pk_parse_public_key(&pk_ctx, reinterpret_cast<const uint8_t *>(publicKey), sizeof(publicKey)) != 0)
     {
         return retStatus::firmwareInvalid;
     }
