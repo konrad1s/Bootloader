@@ -130,10 +130,9 @@ void Bootloader::boot()
 
     while (startTime + waitForBootActionMs > HAL_GetTick())
     {
-        /* TODO: Add return value receive */
-        beecom_.receive();
+        if (beecom_.receive() > 0U)
         {
-            // startTime = HAL_GetTick();
+            startTime = HAL_GetTick();
         }
     }
 
@@ -142,10 +141,10 @@ void Bootloader::boot()
         appJumper.jumpToApplication();
     }
     // else
-    {
-        while (true)
-        {
-            beecom_.receive();
-        }
-    }
+    // {
+    //     while (true)
+    //     {
+    //         beecom_.receive();
+    //     }
+    // }
 }
