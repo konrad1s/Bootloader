@@ -1,3 +1,6 @@
 [submodule "mbedtls"]
 	path = mbedtls
 	url = https://github.com/Mbed-TLS/mbedtls.git
+[submodule "beecom"]
+	path = beecom
+	url = https://github.com/konrad1s/BeeCom-Protocol.git
