@@ -46,6 +46,7 @@ public:
 
 private:
     constexpr static uint8_t waitForBootActionMs = 50U;
+    size_t bytesFlashed{0};
 
     IFlashManager &flashManager_;
     BootState state{BootState::IDLE};

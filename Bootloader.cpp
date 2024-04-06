@@ -19,7 +19,10 @@ void Bootloader::setupPacketHandler()
         if (crcValid)
             handleValidPacket(packet);
         else
+        {
             sendResponse(false, packetType::invalidPacket);
+            bytesFlashed = 0U;
+        }
     };
 
     beecom_.setPacketHandler(packetHandler);
@@ -62,15 +65,22 @@ void Bootloader::handleValidPacket(const beecom::Packet &packet)
         (void)extractAddress(packet.payload, &startAddress);
         dataStart = packet.payload + sizeof(startAddress);
         fStatus = flashManager_.Write(startAddress, dataStart, dataSize);
+        bytesFlashed += dataSize;
         break;
     case packetType::validateFlash:
     {
-        constexpr size_t appSize = FlashMapping::appEndAddress - FlashMapping::appStartAddress;
-
-        secureBoot.validateFirmware(packet.payload,
-                                    packet.header.length,
-                                    reinterpret_cast<const unsigned char *>(FlashMapping::appStartAddress),
-                                    appSize);
+        SecureBoot::retStatus sStatus = secureBoot.validateFirmware(packet.payload,
+                                                                    packet.header.length,
+                                                                    reinterpret_cast<const unsigned char *>(FlashMapping::appStartAddress),
+                                                                    bytesFlashed);
+        if (SecureBoot::retStatus::valid == sStatus)
+        {
+            fStatus = IFlashManager::state::eOk;
+        }
+        else
+        {
+            fStatus = IFlashManager::state::eNotOk;
+        }
         break;
     }
 

@@ -8,6 +8,8 @@ extern "C"
 #include "mbedtls/md.h"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/entropy.h"
+#include "mbedtls/pk.h"
+#include "mbedtls/memory_buffer_alloc.h"
 }
 
 class SecureBoot
@@ -19,7 +21,7 @@ public:
         invalidSignature,
         hashCalculationError,
         publicKeyError,
-        dataCorrupted
+        paddingError
     };
 
     SecureBoot();
@@ -29,7 +31,7 @@ public:
                                const unsigned char *data, size_t data_len);
 
 private:
-    mbedtls_pk_context pk_ctx;
+    unsigned char mbedtlsBuff[8192];
 
     const char *publicKey = "-----BEGIN PUBLIC KEY-----\n"
                             "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4MmPwXNM/ZeAgYfLuWX2\n"
@@ -41,5 +43,5 @@ private:
                             "UQIDAQAB\n"
                             "-----END PUBLIC KEY-----\n";
 
-    retStatus calculateHash(const unsigned char *data, size_t data_len, unsigned char *hash, size_t *hash_len);
+    retStatus calculateHash(const unsigned char *data, size_t data_len, unsigned char *hash);
 };
