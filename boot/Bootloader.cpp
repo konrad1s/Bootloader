@@ -69,10 +69,11 @@ void Bootloader::handleValidPacket(const beecom::Packet &packet)
         break;
     case packetType::validateFlash:
     {
-        SecureBoot::retStatus sStatus = secureBoot.validateFirmware(packet.payload,
-                                                                    packet.header.length,
-                                                                    reinterpret_cast<const unsigned char *>(FlashMapping::appStartAddress),
-                                                                    bytesFlashed);
+        SecureBoot::retStatus sStatus;
+        sStatus = secureBoot.validateFirmware(reinterpret_cast<const unsigned char *>(FlashMapping::appSignatureAddress),
+                                              FlashMapping::appSignatureSize,
+                                              reinterpret_cast<const unsigned char *>(FlashMapping::appStartAddress),
+                                              bytesFlashed);
         if (SecureBoot::retStatus::valid == sStatus)
         {
             fStatus = IFlashManager::state::eOk;
@@ -128,17 +129,21 @@ void Bootloader::boot()
 {
     auto startTime = HAL_GetTick();
 
-    while (startTime + waitForBootActionMs > HAL_GetTick())
-    {
-        if (beecom_.receive() > 0U)
-        {
-            startTime = HAL_GetTick();
-        }
-    }
+    // while (startTime + waitForBootActionMs > HAL_GetTick())
+    // {
+    //     if (beecom_.receive() > 0U)
+    //     {
+    //         startTime = HAL_GetTick();
+    //     }
+    // }
 
     // if (SecureBoot::retStatus::firmwareValid == secureBoot.validateFirmware())
+    // {
+    //     appJumper.jumpToApplication();
+    // }
+    while (true)
     {
-        appJumper.jumpToApplication();
+        beecom_.receive();
     }
     // else
     // {
