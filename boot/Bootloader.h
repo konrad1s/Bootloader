@@ -29,6 +29,8 @@ public:
         getBootloaderVersion,
         getAppVersion,
         getAppSignature,
+
+        numberOfPacketTypes
     };
 
     enum class retStatus
@@ -40,6 +42,7 @@ public:
     Bootloader(beecom::BeeCOM &beecom, IFlashManager &flashManager) : beecom_(beecom), flashManager_(flashManager)
     {
         setupPacketHandler();
+        initializeLookupTable();
     }
 
     beecom::BeeCOM &beecom_;
@@ -47,11 +50,14 @@ public:
 private:
     constexpr static uint8_t waitForBootActionMs = 50U;
     size_t bytesFlashed{0};
-
     IFlashManager &flashManager_;
     BootState state{BootState::IDLE};
     AppJumper appJumper;
     SecureBoot secureBoot;
+
+    using handlerFunction = retStatus (Bootloader::*)(const beecom::Packet &);
+    static constexpr size_t numberOfPacketTypes = static_cast<size_t>(packetType::numberOfPacketTypes);
+    handlerFunction packetHandlers[numberOfPacketTypes];
 
     void setupPacketHandler();
     void handleValidPacket(const beecom::Packet &packet);
@@ -62,4 +68,9 @@ private:
 
     void boot();
     retStatus extractAddress(const uint8_t *payload, uint32_t *address);
+
+    void initializeLookupTable();
+    retStatus handleFlashData(const beecom::Packet &packet);
+    retStatus handleFlashStart(const beecom::Packet &packet);
+    retStatus handleValidateSignature(const beecom::Packet &packet);
 };

@@ -47,56 +47,73 @@ void Bootloader::sendResponse(bool success, packetType type, const uint8_t *data
     beecom_.send(responsePacket);
 }
 
-void Bootloader::handleValidPacket(const beecom::Packet &packet)
+void Bootloader::initializeLookupTable()
 {
-    const uint8_t *dataStart = nullptr;
+    for (size_t i = 0U; i < numberOfPacketTypes; ++i)
+    {
+        packetHandlers[i] = nullptr;
+    }
+
+    packetHandlers[static_cast<size_t>(packetType::flashData)] = &Bootloader::handleFlashData;
+    packetHandlers[static_cast<size_t>(packetType::flashStart)] = &Bootloader::handleFlashStart;
+    packetHandlers[static_cast<size_t>(packetType::validateFlash)] = &Bootloader::handleValidateSignature;
+}
+
+Bootloader::retStatus Bootloader::handleFlashData(const beecom::Packet &packet)
+{
     uint32_t startAddress;
-    const packetType pt = static_cast<packetType>(packet.header.type);
-    IFlashManager::state fStatus = IFlashManager::state::eNotOk;
     size_t dataSize = packet.header.length - sizeof(uint32_t);
 
-    switch (pt)
+    (void)extractAddress(packet.payload, &startAddress);
+
+    const uint8_t *dataStart = packet.payload + sizeof(startAddress);
+    auto fStatus = flashManager_.Write(startAddress, dataStart, dataSize);
+    bytesFlashed += dataSize;
+
+    return (fStatus == IFlashManager::state::eOk) ? retStatus::eOk : retStatus::eNotOk;
+}
+
+Bootloader::retStatus Bootloader::handleFlashStart(const beecom::Packet &packet)
+{
+    auto fStatus = flashManager_.Erase(FlashMapping::appStartAddress, FlashMapping::appEndAddress);
+
+    return (fStatus == IFlashManager::state::eOk) ? retStatus::eOk : retStatus::eNotOk;
+}
+
+Bootloader::retStatus Bootloader::handleValidateSignature(const beecom::Packet &packet)
+{
+    SecureBoot::retStatus sStatus;
+
+    sStatus = secureBoot.validateFirmware(reinterpret_cast<const unsigned char *>(FlashMapping::appSignatureAddress),
+                                          FlashMapping::appSignatureSize,
+                                          reinterpret_cast<const unsigned char *>(FlashMapping::appStartAddress),
+                                          bytesFlashed);
+
+    return (SecureBoot::retStatus::valid == sStatus) ? retStatus::eOk : retStatus::eNotOk;
+}
+
+void Bootloader::handleValidPacket(const beecom::Packet &packet)
+{
+    size_t index = static_cast<size_t>(packet.header.type);
+
+    if (index < numberOfPacketTypes && packetHandlers[index] != nullptr)
     {
-    case packetType::flashStart:
-        fStatus = flashManager_.Erase(FlashMapping::appStartAddress, FlashMapping::appEndAddress);
-        break;
-    case packetType::flashData:
-    case packetType::flashMac:
-        (void)extractAddress(packet.payload, &startAddress);
-        dataStart = packet.payload + sizeof(startAddress);
-        fStatus = flashManager_.Write(startAddress, dataStart, dataSize);
-        bytesFlashed += dataSize;
-        break;
-    case packetType::validateFlash:
-    {
-        SecureBoot::retStatus sStatus;
-        sStatus = secureBoot.validateFirmware(reinterpret_cast<const unsigned char *>(FlashMapping::appSignatureAddress),
-                                              FlashMapping::appSignatureSize,
-                                              reinterpret_cast<const unsigned char *>(FlashMapping::appStartAddress),
-                                              bytesFlashed);
-        if (SecureBoot::retStatus::valid == sStatus)
+        auto handler = packetHandlers[index];
+        auto status = (this->*handler)(packet);
+
+        if (retStatus::eOk == status)
         {
-            fStatus = IFlashManager::state::eOk;
+            sendResponse(true, static_cast<packetType>(packet.header.type));
         }
         else
         {
-            fStatus = IFlashManager::state::eNotOk;
+            sendResponse(false, static_cast<packetType>(packet.header.type));
         }
-        break;
     }
-
-        appJumper.jumpToApplication();
-        break;
-    case packetType::getAppVersion:
-    case packetType::getAppSignature:
-    case packetType::getBootloaderVersion:
-        handleReadDataRequest(static_cast<packetType>(packet.header.type));
-        return;
-    default:
-        break;
+    else
+    {
+        sendResponse(false, static_cast<packetType>(packet.header.type));
     }
-
-    sendResponse(fStatus == IFlashManager::state::eOk, pt);
 }
 
 void Bootloader::handleReadDataRequest(packetType type)
