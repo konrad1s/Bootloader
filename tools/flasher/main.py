@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout
                              QProgressBar, QMessageBox)
 from PyQt5.QtCore import Qt
 from uart_com import UARTCommunication
+from beecom_packet import BeeCOMPacket, PacketType
 
 logging.basicConfig(level=logging.INFO, filename='beecom_flasher.log', filemode='a',
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -21,6 +22,8 @@ class QTextEditLogger(logging.Handler):
 
 
 class BeeComFlasher(QMainWindow):
+    ACK_PACKET = b'\x55'
+
     def __init__(self):
         super().__init__()
         self.uart_comm = UARTCommunication()
@@ -39,7 +42,6 @@ class BeeComFlasher(QMainWindow):
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
-        
         self.setupTopLayout(main_layout)
         self.setupFileLayout(main_layout)
         self.setupButtonsLayout(main_layout)
@@ -125,16 +127,28 @@ class BeeComFlasher(QMainWindow):
     def connect_to_device(self):
         selected_port = self.port_combo_box.currentText()
         baud_rate = int(self.baud_rate_input.text())
-        if self.uart_comm.connect(selected_port, baud_rate):
-            self.log("Successfully connected to the device.")
-            self.enable_flashing_buttons(True)
-        else:
-            self.log("Failed to connect to the device.", logging.ERROR)
-            self.show_error_message("Failed to connect to the device.")
+        try:
+            if self.uart_comm.connect(selected_port, baud_rate):
+                self.log("Successfully connected to the device.")
+                self.enable_flashing_buttons(True)
+        except Exception as e:
+            self.log(f"Failed to connect to the device: {e}", logging.ERROR)
+            QMessageBox.critical(self, "Error", "Failed to connect to the device.")
             self.enable_flashing_buttons(False)
 
     def flash_firmware(self):
-        self.log("Flashing firmware...")
+        """Send firmware flashing start command and handle response."""
+        self.log("Sending flash start command...")
+        try:
+            start_packet = BeeCOMPacket(packet_type=PacketType.flashStart).create_packet()
+            self.uart_comm.send_packet(start_packet)
+            response = self.uart_comm.receive_packet(timeout=10)
+            response_packet, crc_received = BeeCOMPacket.parse_packet(response)
+            if not response_packet.validate_packet(crc_received, PacketType.flashStart):
+                raise ValueError("Packet validation failed.")
+            self.log("Flash start ACK received.")
+        except (ValueError, ConnectionError, TimeoutError) as e:
+            self.log(str(e), level=logging.ERROR)
 
     def verify_signature(self):
         self.log("Verifying firmware signature...")
@@ -155,14 +169,7 @@ class BeeComFlasher(QMainWindow):
         self.read_sig_button.setEnabled(enable)
 
     def log(self, message, level=logging.INFO):
-        if level == logging.INFO:
-            logging.info(message)
-        elif level == logging.WARNING:
-            logging.warning(message)
-        elif level == logging.ERROR:
-            logging.error(message)
-        elif level == logging.DEBUG:
-            logging.debug(message)
+        logging.log(level, message)
 
     def show_error_message(self, message):
         QMessageBox.critical(self, "Error", message)
