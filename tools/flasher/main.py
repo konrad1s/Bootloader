@@ -7,6 +7,8 @@ from PyQt5.QtCore import Qt
 from uart_com import UARTCommunication
 from beecom_packet import BeeCOMPacket, PacketType
 from crypto_manager import CryptoManager
+from hex_file_processor import HexFileProcessor
+import struct
 
 logging.basicConfig(level=logging.INFO, filename='beecom_flasher.log', filemode='a',
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -29,6 +31,7 @@ class BeeComFlasher(QMainWindow):
         super().__init__()
         self.uart_comm = UARTCommunication()
         self.crypto_manager = CryptoManager()
+        self.hex_processor = None
         self.setupUI()
         self.setupLogger()
 
@@ -129,7 +132,13 @@ class BeeComFlasher(QMainWindow):
     def select_hex_file(self):
         file_name, _ = QFileDialog.getOpenFileName(self, "Open HEX file", "", "HEX files (*.hex)")
         if file_name:
-            self.log(f"Selected file: {file_name}")
+            try:
+                self.hex_processor = HexFileProcessor(file_name)
+                self.log("HEX file successfully loaded.")
+            except FileNotFoundError:
+                self.log("Failed to load HEX file: File not found.", level=logging.ERROR)
+            except Exception as e:
+                self.log(f"Failed to load HEX file: {e}", level=logging.ERROR)
 
     def load_key(self):
         """Load a private key from a .pem file using a file dialog."""
@@ -165,11 +174,36 @@ class BeeComFlasher(QMainWindow):
             self.uart_comm.send_packet(start_packet)
             response = self.uart_comm.receive_packet(timeout=10)
             response_packet, crc_received = BeeCOMPacket.parse_packet(response)
-            if not response_packet.validate_packet(crc_received, PacketType.flashStart):
+            if not response_packet.validate_packet(crc_received, PacketType.flashStart, self.ACK_PACKET):
                 raise ValueError("Packet validation failed.")
             self.log("Flash start ACK received.")
         except (ValueError, ConnectionError, TimeoutError) as e:
             self.log(str(e), level=logging.ERROR)
+            return
+
+        try:
+            data_blocks = self.hex_processor.load_and_process_hex_file()
+            max_payload_size = 256
+            total_size = sum(len(data) for _, data in data_blocks)
+            self.flash_progress_bar.setMaximum(total_size)
+            self.flash_progress_bar.setValue(0)
+            current_size = 0
+
+            for address, data in data_blocks:
+                for chunk in HexFileProcessor.chunk_data(data, max_payload_size - 4):
+                    address_payload = struct.pack('>I', address) + bytes(chunk)
+                    packet = BeeCOMPacket(packet_type=PacketType.flashData, payload=address_payload).create_packet()
+                    self.uart_comm.send_packet(packet)
+                    response = self.uart_comm.receive_packet()
+                    response_packet, crc_received = BeeCOMPacket.parse_packet(response)
+                    if not response_packet.validate_packet(crc_received, PacketType.flashData, self.ACK_PACKET):
+                        raise ValueError("Packet validation failed.")
+                    address += len(chunk)
+                    current_size += len(chunk)
+                    self.flash_progress_bar.setValue(current_size)
+                    self.log(f"Flashed data to address {address}")
+        except Exception as e:
+            self.log(f"Error flashing firmware: {e}", logging.ERROR)
 
     def verify_signature(self):
         self.log("Verifying firmware signature...")

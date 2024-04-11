@@ -33,11 +33,11 @@ class UARTCommunication:
         if not self.ser or not self.ser.is_open:
             raise ConnectionError("Attempted to receive on a closed connection.")
 
-        end_time = time.time() + timeout
-        data = b''
-        while time.time() < end_time:
+        timeout = time.time() + timeout
+        while time.time() < timeout:
             if self.ser.in_waiting > 0:
-                data += self.ser.read(self.ser.in_waiting)
+                data = self.ser.read(self.ser.in_waiting)
+                return data
             time.sleep(0.1)
         if not data:
             raise TimeoutError("No data received within the specified timeout.")
