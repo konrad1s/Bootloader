@@ -32,7 +32,6 @@ class BeeCOMPacket:
         self.sop = sop
         self.packet_type = packet_type
         self.payload = payload
-        self.logger = logging.getLogger(self.__class__.__name__)
 
     def create_packet(self):
         """Create a BeeCOM packet from instance variables."""

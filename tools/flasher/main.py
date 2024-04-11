@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout
 from PyQt5.QtCore import Qt
 from uart_com import UARTCommunication
 from beecom_packet import BeeCOMPacket, PacketType
+from crypto_manager import CryptoManager
 
 logging.basicConfig(level=logging.INFO, filename='beecom_flasher.log', filemode='a',
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -27,6 +28,7 @@ class BeeComFlasher(QMainWindow):
     def __init__(self):
         super().__init__()
         self.uart_comm = UARTCommunication()
+        self.crypto_manager = CryptoManager()
         self.setupUI()
         self.setupLogger()
 
@@ -63,6 +65,11 @@ class BeeComFlasher(QMainWindow):
         self.file_button = QPushButton('Select .hex File', self)
         self.file_button.clicked.connect(self.select_hex_file)
         layout.addWidget(self.file_button)
+
+        self.private_key_button = QPushButton('Load Key', self)
+        self.private_key_button.clicked.connect(self.load_key)
+        layout.addWidget(self.private_key_button)
+
         main_layout.addLayout(layout)
 
     def setupButtonsLayout(self, main_layout):
@@ -123,6 +130,20 @@ class BeeComFlasher(QMainWindow):
         file_name, _ = QFileDialog.getOpenFileName(self, "Open HEX file", "", "HEX files (*.hex)")
         if file_name:
             self.log(f"Selected file: {file_name}")
+
+    def load_key(self):
+        """Load a private key from a .pem file using a file dialog."""
+        file_name, _ = QFileDialog.getOpenFileName(self, "Open Private Key File", "", "PEM files (*.pem)")
+        if file_name:
+            try:
+                self.crypto_manager.load_private_key(file_path=file_name)
+                self.log("Private key successfully loaded.")
+            except FileNotFoundError:
+                self.log("Failed to load private key: File not found.", level=logging.ERROR)
+            except ValueError as e:
+                self.log(f"Failed to load private key: {e}", level=logging.ERROR)
+            except Exception as e:
+                self.log(f"Unexpected error: {e}", level=logging.ERROR)
 
     def connect_to_device(self):
         selected_port = self.port_combo_box.currentText()
