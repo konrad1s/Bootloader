@@ -5,10 +5,9 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout
                              QProgressBar, QMessageBox)
 from PyQt5.QtCore import Qt
 from uart_com import UARTCommunication
-from beecom_packet import BeeCOMPacket, PacketType
 from crypto_manager import CryptoManager
 from hex_file_processor import HexFileProcessor
-import struct
+from qt_threads import FlashFirmwareThread, EraseFirmwareThread
 
 logging.basicConfig(level=logging.INFO, filename='beecom_flasher.log', filemode='a',
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -32,6 +31,7 @@ class BeeComFlasher(QMainWindow):
         self.uart_comm = UARTCommunication()
         self.crypto_manager = CryptoManager()
         self.hex_processor = None
+        self.firmware_erased = False
         self.setupUI()
         self.setupLogger()
 
@@ -77,12 +77,14 @@ class BeeComFlasher(QMainWindow):
 
     def setupButtonsLayout(self, main_layout):
         layout = QHBoxLayout()
+        self.erase_button = self.setupActionButton(layout, 'Erase firmware', self.erase_firmware, False)
         self.flash_button = self.setupActionButton(layout, 'Flash firmware', self.flash_firmware, False)
-        self.verify_button = self.setupActionButton(layout, 'Verify Signature', self.verify_signature, False)
-        self.read_sig_button = self.setupActionButton(layout, 'Read Signature', self.read_signature, False)
+        self.verify_button = self.setupActionButton(layout, 'Validate application', self.validate_app, False)
+        main_layout.addLayout(layout)
 
-        main_layout.addLayout(layout)
-        main_layout.addLayout(layout)
+        read_sig_layout = QHBoxLayout()
+        self.read_sig_button = self.setupActionButton(read_sig_layout, 'Read Signature', self.read_signature, False)
+        main_layout.addLayout(read_sig_layout)
 
     def setupActionButton(self, layout, title, method, enabled=True):
         button = QPushButton(title, self)
@@ -92,13 +94,16 @@ class BeeComFlasher(QMainWindow):
         return button
 
     def setupProgressAndLog(self, main_layout):
-        self.flash_progress_bar = QProgressBar(self)
-        self.flash_progress_bar.setAlignment(Qt.AlignCenter)
-        main_layout.addWidget(self.flash_progress_bar)
-        
+        log_layout = QVBoxLayout()
         self.log_area = QTextEdit(self)
         self.log_area.setReadOnly(True)
-        main_layout.addWidget(self.log_area)
+        log_layout.addWidget(self.log_area)
+
+        self.flash_progress_bar = QProgressBar(self)
+        self.flash_progress_bar.setAlignment(Qt.AlignCenter)
+        log_layout.addWidget(self.flash_progress_bar)
+
+        main_layout.addLayout(log_layout)
 
     def setupPortSelection(self, layout):
         self.port_label = QLabel("Select UART port:", self)
@@ -166,46 +171,34 @@ class BeeComFlasher(QMainWindow):
             QMessageBox.critical(self, "Error", "Failed to connect to the device.")
             self.enable_flashing_buttons(False)
 
+    def erase_firmware(self):
+        self.log("Initiating firmware erase...")
+        self.erase_thread = EraseFirmwareThread(self.uart_comm)
+        self.erase_thread.finished.connect(self.on_erase_finished)
+        self.erase_thread.start()
+
+    def on_erase_finished(self, success, message):
+        if success:
+            self.firmware_erased = True
+            self.log(message)
+        else:
+            self.log(message, level=logging.ERROR)
+            self.show_error_message(message)
+
     def flash_firmware(self):
-        """Send firmware flashing start command and handle response."""
-        self.log("Sending flash start command...")
-        try:
-            start_packet = BeeCOMPacket(packet_type=PacketType.flashStart).create_packet()
-            self.uart_comm.send_packet(start_packet)
-            response = self.uart_comm.receive_packet(timeout=10)
-            response_packet, crc_received = BeeCOMPacket.parse_packet(response)
-            if not response_packet.validate_packet(crc_received, PacketType.flashStart, self.ACK_PACKET):
-                raise ValueError("Packet validation failed.")
-            self.log("Flash start ACK received.")
-        except (ValueError, ConnectionError, TimeoutError) as e:
-            self.log(str(e), level=logging.ERROR)
-            return
+        if not self.firmware_erased:
+            self.log("Firmware not erased, erasing now...")
+            self.erase_firmware()
+            if not self.firmware_erased:
+                return
 
-        try:
-            data_blocks = self.hex_processor.load_and_process_hex_file()
-            max_payload_size = 256
-            total_size = sum(len(data) for _, data in data_blocks)
-            self.flash_progress_bar.setMaximum(total_size)
-            self.flash_progress_bar.setValue(0)
-            current_size = 0
+        self.flash_thread = FlashFirmwareThread(self.hex_processor, self.uart_comm)
+        self.flash_thread.progress_max.connect(self.flash_progress_bar.setMaximum)
+        self.flash_thread.update_progress.connect(self.flash_progress_bar.setValue)
+        self.flash_thread.log_message.connect(self.log)
+        self.flash_thread.start()
 
-            for address, data in data_blocks:
-                for chunk in HexFileProcessor.chunk_data(data, max_payload_size - 4):
-                    address_payload = struct.pack('>I', address) + bytes(chunk)
-                    packet = BeeCOMPacket(packet_type=PacketType.flashData, payload=address_payload).create_packet()
-                    self.uart_comm.send_packet(packet)
-                    response = self.uart_comm.receive_packet()
-                    response_packet, crc_received = BeeCOMPacket.parse_packet(response)
-                    if not response_packet.validate_packet(crc_received, PacketType.flashData, self.ACK_PACKET):
-                        raise ValueError("Packet validation failed.")
-                    address += len(chunk)
-                    current_size += len(chunk)
-                    self.flash_progress_bar.setValue(current_size)
-                    self.log(f"Flashed data to address {address}")
-        except Exception as e:
-            self.log(f"Error flashing firmware: {e}", logging.ERROR)
-
-    def verify_signature(self):
+    def validate_app(self):
         self.log("Verifying firmware signature...")
 
     def read_signature(self):
@@ -220,6 +213,7 @@ class BeeComFlasher(QMainWindow):
     def enable_flashing_buttons(self, enable):
         """Enable or disable the flashing-related buttons."""
         self.flash_button.setEnabled(enable)
+        self.erase_button.setEnabled(enable)
         self.verify_button.setEnabled(enable)
         self.read_sig_button.setEnabled(enable)
 

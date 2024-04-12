@@ -38,7 +38,6 @@ class UARTCommunication:
             if self.ser.in_waiting > 0:
                 data = self.ser.read(self.ser.in_waiting)
                 return data
-            time.sleep(0.1)
         if not data:
             raise TimeoutError("No data received within the specified timeout.")
         return data
