@@ -1,5 +1,5 @@
 from hexrec.formats.ihex import IhexFile, IhexRecord
-import struct
+from cryptography.hazmat.primitives import hashes
 
 class HexFileProcessor:
     def __init__(self, file_path):
@@ -24,6 +24,36 @@ class HexFileProcessor:
                 address = base_address + record.address
                 processed_data.append((address, record.data))
         return processed_data
+
+    def calculate_hash(self):
+        """Calculate SHA-256 hash of the hex file, filling gaps with 0xFF."""
+        if not self.ihex:
+            raise ValueError("No hex file loaded.")
+
+        min_address = float('inf')
+        max_address = 0
+        data_map = {}
+        base_address = 0
+        for record in self.ihex.records:
+            if record.tag == IhexRecord.Tag.EXTENDED_LINEAR_ADDRESS:
+                base_address = int.from_bytes(record.data, byteorder='big') << 16
+            elif record.tag == IhexRecord.Tag.EXTENDED_SEGMENT_ADDRESS:
+                base_address = int.from_bytes(record.data, byteorder='big') << 4
+            elif record.tag == IhexRecord.Tag.DATA:
+                address = base_address + record.address
+                min_address = min(min_address, address)
+                max_address = max(max_address, address + len(record.data))
+                data_map[address] = record.data
+
+        full_data = bytearray((max_address - min_address) * [0xFF])
+
+        for address, data in data_map.items():
+            start_index = address - min_address
+            full_data[start_index:start_index + len(data)] = data
+
+        hash_context = hashes.Hash(hashes.SHA256())
+        hash_context.update(full_data)
+        return hash_context.finalize()
 
     @staticmethod
     def chunk_data(data, chunk_size):

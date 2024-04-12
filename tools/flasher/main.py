@@ -8,6 +8,7 @@ from uart_com import UARTCommunication
 from crypto_manager import CryptoManager
 from hex_file_processor import HexFileProcessor
 from qt_threads import FlashFirmwareThread, EraseFirmwareThread
+from beecom_packet import BeeCOMPacket, PacketType
 
 logging.basicConfig(level=logging.INFO, filename='beecom_flasher.log', filemode='a',
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -139,6 +140,7 @@ class BeeComFlasher(QMainWindow):
         if file_name:
             try:
                 self.hex_processor = HexFileProcessor(file_name)
+                self.hex_processor.load_and_process_hex_file()
                 self.log("HEX file successfully loaded.")
             except FileNotFoundError:
                 self.log("Failed to load HEX file: File not found.", level=logging.ERROR)
@@ -199,7 +201,32 @@ class BeeComFlasher(QMainWindow):
         self.flash_thread.start()
 
     def validate_app(self):
-        self.log("Verifying firmware signature...")
+        try:
+            self.log("Starting the application validation process...")
+
+            if not self.hex_processor:
+                raise ValueError("HEX file not loaded. Please load a HEX file first.")
+            if not self.crypto_manager.private_key:
+                raise ValueError("Private key not loaded. Please load a private key first.")
+
+            file_hash = self.hex_processor.calculate_hash()
+            signature = self.crypto_manager.sign_data(file_hash)
+            self.log(f"Signature generated: {signature.hex()}")
+
+            signature_packet = BeeCOMPacket(packet_type=PacketType.validateFlash, payload=signature).create_packet()
+            self.uart_comm.send_packet(signature_packet)
+
+            response = self.uart_comm.receive_packet(timeout=10)
+            response_packet, crc_received = BeeCOMPacket.parse_packet(response)
+
+            if not response_packet.validate_packet(crc_received, PacketType.validateFlash, self.ACK_PACKET):
+                raise ValueError("Validation packet validation failed.")
+
+            self.log("Application validated successfully.")
+
+        except Exception as e:
+            self.log(f"Failed to validate application: {e}", level=logging.ERROR)
+            self.show_error_message(f"Validation error: {e}")
 
     def read_signature(self):
         self.log("Reading firmware signature...")
