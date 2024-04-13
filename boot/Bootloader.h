@@ -10,11 +10,15 @@ class Bootloader
 public:
     enum class BootState
     {
-        IDLE,
-        RECEIVING_DATA,
-        FLASHING,
-        VERIFIYING,
-        UPDATE_COMPLETED
+        idle,
+        booting,
+
+        erasing,
+        flashing,
+        verifying,
+
+        error,
+        numStates
     };
 
     enum class packetType
@@ -45,11 +49,22 @@ public:
         initializeLookupTable();
     }
 
-    beecom::BeeCOM &beecom_;
+    void boot();
 
 private:
-    constexpr static uint8_t waitForBootActionMs = 50U;
-    size_t bytesFlashed{0};
+    static constexpr size_t waitForBootActionMs = 50U;
+    static constexpr size_t actionBootExtensionMs = 5000U;
+    static constexpr bool validTransitions[static_cast<int>(BootState::numStates)][static_cast<int>(BootState::numStates)] = {
+                      /* idle, booting, erasing, flashing, verifying, error */
+        /* idle */      {false, true,   true,    false,     false,    true},
+        /* booting */   {false, true,   true,    false,     false,    true},
+        /* erasing */   {false, false,  false,   true,      false,    true},
+        /* flashing */  {false, false,  false,   true,      true,     true},
+        /* verifying */ {true,  true,   false,   false,     false,    false},
+        /* error */     {false, false,  true,    false,     false,    false}
+    };
+    BootState state{BootState::idle};
+    beecom::BeeCOM &beecom_;
     IFlashManager &flashManager_;
     AppJumper appJumper;
     SecureBoot secureBoot;
@@ -59,16 +74,16 @@ private:
     handlerFunction packetHandlers[numberOfPacketTypes];
 
     void setupPacketHandler();
+    BootState determineTargetState(packetType type);
     void handleValidPacket(const beecom::Packet &packet);
-    void handleReadDataRequest(packetType type);
+    bool transitionState(BootState newState);
     void sendResponse(bool success, packetType type, const uint8_t *data = nullptr, size_t dataSize = 0);
-
-    void getFirmwareVersion();
-
-    void boot();
     retStatus extractAddress(const uint8_t *payload, uint32_t *address);
+    bool validateFirmware();
 
     void initializeLookupTable();
+    void handleReadDataRequest(packetType type);
+    void getFirmwareVersion();
     retStatus handleFlashData(const beecom::Packet &packet);
     retStatus handleFlashStart(const beecom::Packet &packet);
     retStatus handleValidateSignature(const beecom::Packet &packet);

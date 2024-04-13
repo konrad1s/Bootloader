@@ -46,6 +46,18 @@ void Bootloader::sendResponse(bool success, packetType type, const uint8_t *data
     beecom_.send(responsePacket);
 }
 
+bool Bootloader::validateFirmware()
+{
+    SecureBoot::retStatus sStatus;
+
+    sStatus = secureBoot.validateFirmware(reinterpret_cast<const unsigned char *>(FlashMapping::appSignatureAddress),
+                                          FlashMapping::appSignatureSize,
+                                          reinterpret_cast<const unsigned char *>(FlashMapping::appStartAddress),
+                                          FlashMapping::appSize);
+
+    return SecureBoot::retStatus::valid == sStatus;
+}
+
 void Bootloader::initializeLookupTable()
 {
     for (size_t i = 0U; i < numberOfPacketTypes; ++i)
@@ -80,28 +92,59 @@ Bootloader::retStatus Bootloader::handleFlashStart(const beecom::Packet &packet)
 
 Bootloader::retStatus Bootloader::handleValidateSignature(const beecom::Packet &packet)
 {
-    SecureBoot::retStatus sStatus;
-
     flashManager_.Write(FlashMapping::appSignatureAddress, packet.payload, packet.header.length);
-    sStatus = secureBoot.validateFirmware(reinterpret_cast<const unsigned char *>(FlashMapping::appSignatureAddress),
-                                          FlashMapping::appSignatureSize,
-                                          reinterpret_cast<const unsigned char *>(FlashMapping::appStartAddress),
-                                          FlashMapping::appSize);
-    return (SecureBoot::retStatus::valid == sStatus) ? retStatus::eOk : retStatus::eNotOk;
+    bool valid = validateFirmware();
+
+    if (valid)
+    {
+        transitionState(BootState::booting);
+        return retStatus::eOk;
+    }
+    else
+    {
+        return retStatus::eNotOk;
+    }
+}
+
+Bootloader::BootState Bootloader::determineTargetState(packetType type)
+{
+    switch (type)
+    {
+    case packetType::flashStart:
+        return BootState::erasing;
+    case packetType::flashData:
+        return BootState::flashing;
+    case packetType::flashMac:
+    case packetType::validateFlash:
+        return BootState::verifying;
+    default:
+        return state;
+    }
 }
 
 void Bootloader::handleValidPacket(const beecom::Packet &packet)
 {
     size_t index = static_cast<size_t>(packet.header.type);
 
-    if (index < numberOfPacketTypes && packetHandlers[index] != nullptr)
+    if ((index < numberOfPacketTypes) && (packetHandlers[index] != nullptr))
     {
-        auto handler = packetHandlers[index];
-        auto status = (this->*handler)(packet);
+        /* Check if the state transition is valid before processing the packet */
+        BootState targetState = determineTargetState(static_cast<packetType>(packet.header.type));
 
-        if (retStatus::eOk == status)
+        if (transitionState(targetState))
         {
-            sendResponse(true, static_cast<packetType>(packet.header.type));
+            auto handler = packetHandlers[index];
+            auto status = (this->*handler)(packet);
+
+            if (retStatus::eOk == status)
+            {
+                sendResponse(true, static_cast<packetType>(packet.header.type));
+            }
+            else
+            {
+                transitionState(BootState::error);
+                sendResponse(false, static_cast<packetType>(packet.header.type));
+            }
         }
         else
         {
@@ -110,6 +153,7 @@ void Bootloader::handleValidPacket(const beecom::Packet &packet)
     }
     else
     {
+        transitionState(BootState::error);
         sendResponse(false, static_cast<packetType>(packet.header.type));
     }
 }
@@ -140,31 +184,52 @@ void Bootloader::handleReadDataRequest(packetType type)
     sendResponse(true, type, dataBuffer, dataSize);
 }
 
+bool Bootloader::transitionState(BootState newState)
+{
+    int currIndex = static_cast<int>(state);
+    int newIndex = static_cast<int>(newState);
+
+    if (validTransitions[currIndex][newIndex])
+    {
+        state = newState;
+        return true;
+    }
+    else
+    {
+        /* Invalid transition, always go to error state */
+        state = BootState::error;
+        return false;
+    }
+}
+
 void Bootloader::boot()
 {
-    auto startTime = HAL_GetTick();
+    uint32_t startTime = HAL_GetTick();
+    uint32_t bootWaitTime = waitForBootActionMs;
 
-    // while (startTime + waitForBootActionMs > HAL_GetTick())
-    // {
-    //     if (beecom_.receive() > 0U)
-    //     {
-    //         startTime = HAL_GetTick();
-    //     }
-    // }
-
-    // if (SecureBoot::retStatus::firmwareValid == secureBoot.validateFirmware())
-    // {
-    //     appJumper.jumpToApplication();
-    // }
     while (true)
     {
-        beecom_.receive();
+        if (beecom_.receive() > 0U)
+        {
+            startTime = HAL_GetTick();
+            bootWaitTime = actionBootExtensionMs;
+        }
+
+        if ((HAL_GetTick() - startTime > bootWaitTime) || (state == BootState::booting))
+        {
+            if (transitionState(BootState::booting))
+            {
+                /* Booting state */
+                if (validateFirmware())
+                {
+                    appJumper.jumpToApplication();
+                    return;
+                }
+                else
+                {
+                    transitionState(BootState::error);
+                }
+            }
+        }
     }
-    // else
-    // {
-    //     while (true)
-    //     {
-    //         beecom_.receive();
-    //     }
-    // }
 }
