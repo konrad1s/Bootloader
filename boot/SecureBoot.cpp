@@ -1,4 +1,5 @@
 #include "SecureBoot.h"
+#include "BootConfig.h"
 #include <string.h>
 
 SecureBoot::SecureBoot()
@@ -49,9 +50,9 @@ SecureBoot::retStatus SecureBoot::validateFirmware(const unsigned char *signatur
     }
 
     mbedtls_pk_init(&pkCtx);
-    size_t publicKeyLen = strlen((const char *)publicKey) + 1;
+    size_t publicKeyLen = strlen((const char *)BootConfig::publicKey) + 1;
 
-    if (mbedtls_pk_parse_public_key(&pkCtx, reinterpret_cast<const uint8_t *>(publicKey), publicKeyLen) != 0)
+    if (mbedtls_pk_parse_public_key(&pkCtx, reinterpret_cast<const uint8_t *>(BootConfig::publicKey), publicKeyLen) != 0)
     {
         return retStatus::publicKeyError;
     }

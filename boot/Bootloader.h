@@ -52,22 +52,11 @@ public:
     void boot();
 
 private:
-    static constexpr size_t waitForBootActionMs = 50U;
-    static constexpr size_t actionBootExtensionMs = 5000U;
-    static constexpr bool validTransitions[static_cast<int>(BootState::numStates)][static_cast<int>(BootState::numStates)] = {
-                      /* idle, booting, erasing, flashing, verifying, error */
-        /* idle */      {false, true,   true,    false,     false,    true},
-        /* booting */   {false, true,   true,    false,     false,    true},
-        /* erasing */   {false, false,  false,   true,      false,    true},
-        /* flashing */  {false, false,  false,   true,      true,     true},
-        /* verifying */ {true,  true,   false,   false,     false,    false},
-        /* error */     {false, false,  true,    false,     false,    false}
-    };
     BootState state{BootState::idle};
+
     beecom::BeeCOM &beecom_;
     IFlashManager &flashManager_;
     AppJumper appJumper;
-    SecureBoot secureBoot;
 
     using handlerFunction = retStatus (Bootloader::*)(const beecom::Packet &);
     static constexpr size_t numberOfPacketTypes = static_cast<size_t>(packetType::numberOfPacketTypes);

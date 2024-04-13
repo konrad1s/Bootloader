@@ -1,4 +1,5 @@
 #include "Bootloader.h"
+#include "BootConfig.h"
 
 Bootloader::retStatus Bootloader::extractAddress(const uint8_t *payload, uint32_t *address)
 {
@@ -49,6 +50,7 @@ void Bootloader::sendResponse(bool success, packetType type, const uint8_t *data
 bool Bootloader::validateFirmware()
 {
     SecureBoot::retStatus sStatus;
+    SecureBoot secureBoot;
 
     sStatus = secureBoot.validateFirmware(reinterpret_cast<const unsigned char *>(FlashMapping::appSignatureAddress),
                                           FlashMapping::appSignatureSize,
@@ -186,6 +188,16 @@ void Bootloader::handleReadDataRequest(packetType type)
 
 bool Bootloader::transitionState(BootState newState)
 {
+    constexpr bool validTransitions[static_cast<int>(BootState::numStates)][static_cast<int>(BootState::numStates)] = {
+                      /* idle, booting, erasing, flashing, verifying, error */
+        /* idle */      {false, true,   true,    false,     false,    true},
+        /* booting */   {false, true,   true,    false,     false,    true},
+        /* erasing */   {false, false,  false,   true,      false,    true},
+        /* flashing */  {false, false,  false,   true,      true,     true},
+        /* verifying */ {true,  true,   false,   false,     false,    false},
+        /* error */     {false, false,  true,    false,     false,    false}
+    };
+
     int currIndex = static_cast<int>(state);
     int newIndex = static_cast<int>(newState);
 
@@ -205,14 +217,14 @@ bool Bootloader::transitionState(BootState newState)
 void Bootloader::boot()
 {
     uint32_t startTime = HAL_GetTick();
-    uint32_t bootWaitTime = waitForBootActionMs;
+    uint32_t bootWaitTime = BootConfig::waitForBootActionMs;
 
     while (true)
     {
         if (beecom_.receive() > 0U)
         {
             startTime = HAL_GetTick();
-            bootWaitTime = actionBootExtensionMs;
+            bootWaitTime = BootConfig::actionBootExtensionMs;
         }
 
         if ((HAL_GetTick() - startTime > bootWaitTime) || (state == BootState::booting))
