@@ -62,7 +62,7 @@ SecureBoot::retStatus SecureBoot::validateFirmware(const unsigned char *signatur
 
     mbedtls_rsa_context *rsaCtx = mbedtls_pk_rsa(pkCtx);
 
-    if (mbedtls_rsa_set_padding(rsaCtx, MBEDTLS_RSA_PKCS_V15, mdAlg) != 0)
+    if (mbedtls_rsa_set_padding(rsaCtx, MBEDTLS_RSA_PKCS_V21, mdAlg) != 0)
     {
         return retStatus::paddingError;
     }

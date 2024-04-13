@@ -31,25 +31,31 @@ class CryptoManager:
             )
 
     def sign_data(self, data):
-        """Sign data using the loaded private key."""
+        """Sign data using the loaded private key with PKCS#1 v2.1 PSS padding."""
         if not self.private_key:
             raise ValueError("Private key not loaded.")
         signature = self.private_key.sign(
             data,
-            padding.PKCS1v15(),
+            padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
             utils.Prehashed(hashes.SHA256())
         )
         return signature
 
     def verify_signature(self, data, signature):
-        """Verify the signature of the data using the loaded public key."""
+        """Verify the signature of the data using the loaded public key with PKCS#1 v2.1 PSS padding."""
         if not self.public_key:
             raise ValueError("Public key not loaded.")
         try:
             self.public_key.verify(
                 signature,
                 data,
-                padding.PKCS1v15(),
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
                 utils.Prehashed(hashes.SHA256())
             )
             return True
