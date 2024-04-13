@@ -209,7 +209,7 @@ class BeeComFlasher(QMainWindow):
             if not self.crypto_manager.private_key:
                 raise ValueError("Private key not loaded. Please load a private key first.")
 
-            file_hash = self.hex_processor.calculate_hash()
+            file_hash = self.hex_processor.calculate_hash(0x8020110, 0x080FFFFF)
             signature = self.crypto_manager.sign_data(file_hash)
             self.log(f"Signature generated: {signature.hex()}")
 

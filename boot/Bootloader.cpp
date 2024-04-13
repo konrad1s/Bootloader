@@ -21,7 +21,6 @@ void Bootloader::setupPacketHandler()
         else
         {
             sendResponse(false, packetType::invalidPacket);
-            bytesFlashed = 0U;
         }
     };
 
@@ -68,7 +67,6 @@ Bootloader::retStatus Bootloader::handleFlashData(const beecom::Packet &packet)
 
     const uint8_t *dataStart = packet.payload + sizeof(startAddress);
     auto fStatus = flashManager_.Write(startAddress, dataStart, dataSize);
-    bytesFlashed += dataSize;
 
     return (fStatus == IFlashManager::state::eOk) ? retStatus::eOk : retStatus::eNotOk;
 }
@@ -84,11 +82,11 @@ Bootloader::retStatus Bootloader::handleValidateSignature(const beecom::Packet &
 {
     SecureBoot::retStatus sStatus;
 
+    flashManager_.Write(FlashMapping::appSignatureAddress, packet.payload, packet.header.length);
     sStatus = secureBoot.validateFirmware(reinterpret_cast<const unsigned char *>(FlashMapping::appSignatureAddress),
                                           FlashMapping::appSignatureSize,
                                           reinterpret_cast<const unsigned char *>(FlashMapping::appStartAddress),
-                                          bytesFlashed);
-
+                                          FlashMapping::appSize);
     return (SecureBoot::retStatus::valid == sStatus) ? retStatus::eOk : retStatus::eNotOk;
 }
 
