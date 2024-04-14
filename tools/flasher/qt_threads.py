@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QThread, pyqtSignal
 from beecom_packet import BeeCOMPacket, PacketType
 from hex_file_processor import HexFileProcessor
+import logging
 import struct
 
 ACK_PACKET = b'\x55'
