@@ -1,6 +1,7 @@
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding, utils
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding, utils, rsa 
 from cryptography.hazmat.primitives.serialization import load_pem_private_key, load_pem_public_key
+from cryptography.hazmat.primitives.serialization import BestAvailableEncryption, NoEncryption
 from cryptography.hazmat.backends import default_backend
 import os
 
@@ -61,3 +62,32 @@ class CryptoManager:
             return True
         except Exception as e:
             return False
+
+    @staticmethod
+    def generate_key_pair(password=None):
+        """Generate an RSA key pair and return PEM-encoded keys, optionally encrypted with a password."""
+        private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+            backend=default_backend()
+        )
+        public_key = private_key.public_key()
+
+        if password:
+            if isinstance(password, str):
+                password = password.encode()
+            encryption_algorithm = BestAvailableEncryption(password)
+        else:
+            encryption_algorithm = NoEncryption()
+
+        pem_private_key = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=encryption_algorithm
+        )
+        pem_public_key = public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+
+        return pem_private_key, pem_public_key
