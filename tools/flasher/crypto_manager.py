@@ -1,3 +1,4 @@
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QTabWidget, QInputDialog, QLineEdit)
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, utils, rsa 
 from cryptography.hazmat.primitives.serialization import load_pem_private_key, load_pem_public_key
@@ -15,11 +16,35 @@ class CryptoManager:
         if not os.path.exists(file_path):
             raise FileNotFoundError("Private key file not found.")
         with open(file_path, 'rb') as key_file:
-            self.private_key = load_pem_private_key(
-                key_file.read(),
-                password=password,
-                backend=default_backend()
-            )
+            key_data = key_file.read()
+            try:
+                self.private_key = load_pem_private_key(
+                    key_data,
+                    password=password,
+                    backend=default_backend()
+                )
+            except TypeError:
+                if password is None:
+                    user_password = self.prompt_password()
+                    self.private_key = load_pem_private_key(
+                        key_data,
+                        password=user_password.encode() if user_password else None,
+                        backend=default_backend()
+                    )
+                else:
+                    raise ValueError("Incorrect password provided for the private key.")
+
+    def prompt_password(self):
+        """Prompt the user to enter a password for the private key."""
+        app = QApplication.instance()
+        if not app:
+            raise RuntimeError("No QApplication instance found.")
+        password, ok = QInputDialog.getText(None, 'Enter Password',
+                                            'Private key is encrypted. Please enter the password:', QLineEdit.Password)
+        if ok and password:
+            return password
+        else:
+            raise ValueError("Password entry cancelled or no password provided.")
 
     def load_public_key(self, file_path):
         """Load a public RSA key from a PEM file."""
