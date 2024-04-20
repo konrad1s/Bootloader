@@ -1,4 +1,5 @@
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, QLabel, QMessageBox, QFileDialog, QTextEdit)
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QComboBox,
+                             QLineEdit, QLabel, QMessageBox, QFileDialog, QTextEdit)
 from crypto_manager import CryptoManager
 import logging
 
@@ -10,6 +11,15 @@ class SecurityTab(QWidget):
 
     def setupUI(self):
         main_layout = QVBoxLayout(self)
+
+        key_type_layout = QHBoxLayout()
+        self.key_type_label = QLabel("Select Key Type:", self)
+        key_type_layout.addWidget(self.key_type_label)
+
+        self.key_type_combo = QComboBox(self)
+        self.key_type_combo.addItems(["RSA", "ECC"])
+        key_type_layout.addWidget(self.key_type_combo)
+        main_layout.addLayout(key_type_layout)
 
         password_layout = QHBoxLayout()
         self.password_label = QLabel("Password (for encrypting private key):", self)
@@ -42,11 +52,15 @@ class SecurityTab(QWidget):
         main_layout.addWidget(self.public_key_display)
 
     def generate_key_pair(self):
+        key_type = self.key_type_combo.currentText()
+        password = self.password_input.text() or None
+
         try:
-            password = self.password_input.text()
-            if password == "":
-                password = None
-            self.private_key, self.public_key = self.crypto_manager.generate_key_pair(password=password)
+            if key_type == "RSA":
+                self.private_key, self.public_key = self.crypto_manager.generate_rsa_key_pair(password)
+            elif key_type == "ECC":
+                self.private_key, self.public_key = self.crypto_manager.generate_ecc_key_pair(password)
+
             self.display_public_key()
             QMessageBox.information(self, "Success", "Key pair generated successfully.")
         except Exception as e:
