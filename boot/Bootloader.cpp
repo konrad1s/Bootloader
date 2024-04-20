@@ -53,7 +53,7 @@ bool Bootloader::validateFirmware()
     SecureBoot secureBoot;
 
     sStatus = secureBoot.validateFirmware(reinterpret_cast<const unsigned char *>(FlashMapping::appSignatureAddress),
-                                          FlashMapping::appSignatureSize,
+                                          FlashMapping::getAppSignatureSize(),
                                           reinterpret_cast<const unsigned char *>(FlashMapping::appStartAddress),
                                           FlashMapping::appSize);
 
@@ -94,7 +94,7 @@ Bootloader::retStatus Bootloader::handleFlashStart(const beecom::Packet &packet)
 
 Bootloader::retStatus Bootloader::handleValidateSignature(const beecom::Packet &packet)
 {
-    flashManager_.Write(FlashMapping::appSignatureAddress, packet.payload, packet.header.length);
+    flashManager_.Write(FlashMapping::appSignatureSizeAddress, packet.payload, packet.header.length);
     bool valid = validateFirmware();
 
     if (valid)
@@ -168,8 +168,8 @@ void Bootloader::handleReadDataRequest(packetType type)
     switch (type)
     {
     case packetType::getAppSignature:
-        flashManager_.Read(FlashMapping::appSignatureAddress, dataBuffer, FlashMapping::appSignatureSize);
-        dataSize = FlashMapping::appSignatureSize;
+        flashManager_.Read(FlashMapping::appSignatureAddress, dataBuffer, FlashMapping::getAppSignatureSize());
+        dataSize = FlashMapping::getAppSignatureSize();
         break;
     case packetType::getBootloaderVersion:
         dataSize = 0;

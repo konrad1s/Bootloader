@@ -196,6 +196,8 @@ class MainTab(QWidget):
             signature = self.crypto_manager.sign_data(file_hash)
             self.log(f"Signature generated: {signature.hex()}")
 
+            signature = len(signature).to_bytes(2, byteorder='little') + signature
+
             signature_packet = BeeCOMPacket(packet_type=PacketType.validateFlash, payload=signature).create_packet()
             self.uart_comm.send_packet(signature_packet)
 
