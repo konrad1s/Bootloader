@@ -32,6 +32,9 @@ public:
 
 private:
     unsigned char mbedtlsBuff[8192];
-
-    retStatus calculateHash(const unsigned char *data, size_t data_len, unsigned char *hash);
+    retStatus validateFirmwareRSA(const unsigned char *signature, size_t sig_len,
+                                  const unsigned char *data, size_t data_len);
+    retStatus validateFirmwareECC(const unsigned char *signature, size_t sig_len,
+                                  const unsigned char *data, size_t data_len);
+    retStatus calculateSHA256(const unsigned char *data, size_t data_len, unsigned char *hash);
 };
