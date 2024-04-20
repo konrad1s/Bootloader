@@ -5,6 +5,8 @@ namespace BootConfig
     #define RSA_FIRMWARE_VALIDATION     0
     #define ECC_FIRMWARE_VALIDATION     1
 
+    #define BOOTLOADER_VERSION          "1.0.0"
+
     constexpr size_t waitForBootActionMs = 50000U;
     constexpr size_t actionBootExtensionMs = 50000U;
 

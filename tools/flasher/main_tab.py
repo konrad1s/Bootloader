@@ -29,6 +29,7 @@ class MainTab(QWidget):
         self.crypto_manager = CryptoManager()
         self.hex_processor = None
         self.firmware_erased = False
+        self.bootloader_version = None
         self.setupUI()
 
     def setupUI(self):
@@ -52,14 +53,24 @@ class MainTab(QWidget):
         main_layout.addLayout(layout)
 
     def setupFileLayout(self, main_layout):
-        layout = QHBoxLayout()
+        layout = QVBoxLayout()
+
+        read_bootloader_layout = QHBoxLayout()
+        self.read_bootloader_button = QPushButton("Read bootloader version", self)
+        self.read_bootloader_button.clicked.connect(self.read_bootloader_version)
+        read_bootloader_layout.addWidget(self.read_bootloader_button)
+        self.bootloader_version_label = QLabel("Bootloader version: Not read", self)
+        read_bootloader_layout.addWidget(self.bootloader_version_label)
+        layout.addLayout(read_bootloader_layout)
+
+        file_layout = QHBoxLayout()
         self.file_button = QPushButton('Select .hex File', self)
         self.file_button.clicked.connect(self.select_hex_file)
-        layout.addWidget(self.file_button)
-
+        file_layout.addWidget(self.file_button)
         self.private_key_button = QPushButton('Load Key', self)
         self.private_key_button.clicked.connect(self.load_key)
-        layout.addWidget(self.private_key_button)
+        file_layout.addWidget(self.private_key_button)
+        layout.addLayout(file_layout)
 
         main_layout.addLayout(layout)
 
@@ -117,6 +128,26 @@ class MainTab(QWidget):
         logTextBox.setFormatter(formatter)
         logging.getLogger().addHandler(logTextBox)
         logging.getLogger().setLevel(logging.INFO)
+
+    def read_bootloader_version(self):
+        try:
+            request_packet = BeeCOMPacket(packet_type=PacketType.getBootVersion).create_packet()
+            self.uart_comm.send_packet(request_packet)
+
+            response = self.uart_comm.receive_packet(timeout=2)
+            response_packet, crc_received = BeeCOMPacket.parse_packet(response)
+            response_packet.validate_packet(
+                crc_received,
+                expected_packet_type=PacketType.getBootVersion,
+            )
+
+            self.bootloader_version = response_packet.payload.decode('utf-8')
+            self.bootloader_version_label.setText(f"Bootloader version: {self.bootloader_version}")
+            self.log(f"Bootloader version read successfully: {self.bootloader_version}")
+
+        except Exception as e:
+            self.log(f"Error reading bootloader version: {e}", level=logging.ERROR)
+            self.show_error_message(f"Error reading bootloader version: {e}")
 
     def select_hex_file(self):
         file_name, _ = QFileDialog.getOpenFileName(self, "Open HEX file", "", "HEX files (*.hex)")

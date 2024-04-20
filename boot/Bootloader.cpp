@@ -12,9 +12,8 @@ Bootloader::Bootloader(beecom::BeeCOM &beecom, IFlashManager &flashManager)
         &Bootloader::handleFlashData,
         nullptr,
         &Bootloader::handleValidateSignature,
-        nullptr,
-        nullptr
-        };
+        &Bootloader::handleReadDataRequest,
+        &Bootloader::handleReadDataRequest};
     setupPacketHandler();
 }
 
@@ -53,7 +52,7 @@ void Bootloader::handleValidPacket(const beecom::Packet &packet)
                 transitionState(BootState::error);
                 sendResponse(false, static_cast<packetType>(packet.header.type));
             }
-            else
+            else if (status == retStatus::eOk)
             {
                 sendResponse(true, static_cast<packetType>(packet.header.type));
             }
@@ -132,6 +131,36 @@ Bootloader::retStatus Bootloader::handleValidateSignature(const beecom::Packet &
     }
 }
 
+Bootloader::retStatus Bootloader::handleReadDataRequest(const beecom::Packet &packet)
+{
+    uint8_t dataBuffer[FlashMapping::maxDataSize];
+    size_t dataSize = 0;
+    packetType type = static_cast<packetType>(packet.header.type);
+    Bootloader::retStatus status = Bootloader::retStatus::okNoResponse;
+
+    switch (type)
+    {
+    case packetType::getAppSignature:
+        flashManager_.Read(FlashMapping::appSignatureAddress, dataBuffer, FlashMapping::getAppSignatureSize());
+        dataSize = FlashMapping::getAppSignatureSize();
+        break;
+    case packetType::getBootloaderVersion:
+        dataSize = sizeof(BOOTLOADER_VERSION);
+        std::memcpy(dataBuffer, BOOTLOADER_VERSION, dataSize);
+        break;
+    default:
+        status = Bootloader::retStatus::eNotOk;
+        break;
+    }
+
+    if (status == Bootloader::retStatus::okNoResponse)
+    {
+        sendResponse(true, type, dataBuffer, dataSize);
+    }
+
+    return status;
+}
+
 bool Bootloader::validateFirmware()
 {
     SecureBoot secureBoot;
@@ -163,12 +192,12 @@ bool Bootloader::transitionState(BootState newState)
 {
     constexpr bool validTransitions[static_cast<int>(BootState::numStates)][static_cast<int>(BootState::numStates)] = {
                       /* idle, booting, erasing, flashing, verifying, error */
-        /* idle */      {false, true,   true,    false,     false,    true},
+        /* idle */      {true,  true,   true,    false,     false,    true},
         /* booting */   {false, true,   true,    false,     false,    true},
-        /* erasing */   {false, false,  false,   true,      false,    true},
+        /* erasing */   {false, false,  true,    true,      false,    true},
         /* flashing */  {false, false,  false,   true,      true,     true},
-        /* verifying */ {true,  true,   false,   false,     false,    false},
-        /* error */     {false, false,  true,    false,     false,    false}
+        /* verifying */ {true,  true,   false,   false,      true,    false},
+        /* error */     {false, false,  true,    false,     false,    true}
     };
 
     int currIndex = static_cast<int>(state);
@@ -181,7 +210,6 @@ bool Bootloader::transitionState(BootState newState)
     }
     else
     {
-        /* Invalid transition, always go to error state */
         state = BootState::error;
         return false;
     }
@@ -204,7 +232,6 @@ void Bootloader::boot()
         {
             if (transitionState(BootState::booting))
             {
-                /* Booting state */
                 if (validateFirmware())
                 {
                     appJumper.jumpToApplication();

@@ -22,7 +22,7 @@ class PacketType:
     flashData = 2
     flashMac = 3
     validateFlash = 4
-    sendSignature = 5
+    getBootVersion = 5
 
 
 class BeeCOMPacket:

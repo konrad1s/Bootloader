@@ -35,7 +35,8 @@ public:
     enum class retStatus
     {
         eOk,
-        eNotOk
+        eNotOk,
+        okNoResponse
     };
 
     using HandlerFunction = retStatus (Bootloader::*)(const beecom::Packet &);
@@ -63,4 +64,5 @@ private:
     retStatus handleFlashData(const beecom::Packet& packet);
     retStatus handleFlashStart(const beecom::Packet& packet);
     retStatus handleValidateSignature(const beecom::Packet& packet);
+    retStatus handleReadDataRequest(const beecom::Packet &packet);
 };
