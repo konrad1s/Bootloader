@@ -31,7 +31,6 @@ public:
         validateFlash,
 
         getBootloaderVersion,
-        getAppVersion,
         getAppSignature,
 
         numberOfPacketTypes

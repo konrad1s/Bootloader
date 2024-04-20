@@ -167,10 +167,6 @@ void Bootloader::handleReadDataRequest(packetType type)
 
     switch (type)
     {
-    case packetType::getAppVersion:
-        flashManager_.Read(FlashMapping::appVersionAddress, dataBuffer, FlashMapping::appVersionSize);
-        dataSize = FlashMapping::appVersionSize;
-        break;
     case packetType::getAppSignature:
         flashManager_.Read(FlashMapping::appSignatureAddress, dataBuffer, FlashMapping::appSignatureSize);
         dataSize = FlashMapping::appSignatureSize;
