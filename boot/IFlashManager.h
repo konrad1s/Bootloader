@@ -10,7 +10,9 @@ public:
     enum class RetStatus
     {
         eOk,
-        eNotOk
+        eNotOk,
+        einvalidSector,
+        eflashedLocked
     };
 
     struct sectorRange

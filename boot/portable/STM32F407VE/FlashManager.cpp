@@ -50,7 +50,7 @@ FlashManager::RetStatus FlashManager::Erase(uint32_t startAddress, uint32_t endA
     auto range = GetSectorRange(startAddress, endAddress);
     if ((range.startSector == FlashConstants::sectorNotFound) || (range.sectorCount == 0U))
     {
-        return RetStatus::eNotOk;
+        return RetStatus::einvalidSector;
     }
 
     FLASH_EraseInitTypeDef eraseData = {
