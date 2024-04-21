@@ -12,7 +12,7 @@ namespace FlashMapping
 
     static constexpr uint32_t maxDataSize = 16u;
 
-    inline size_t getAppSignatureSize()
+    inline size_t GetAppSignatureSize()
     {
         return static_cast<size_t>(*reinterpret_cast<uint16_t *>(appSignatureSizeAddress));
     }

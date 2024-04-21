@@ -7,13 +7,13 @@ class FlashManager : public IFlashManager
 {
 public:
     FlashManager() = default;
-    state Erase(uint32_t startAddress, uint32_t endAddress) override;
-    state Write(uint32_t startAddress, const void *data, size_t size) override;
-    state Read(uint32_t startAddress, void* buffer, size_t size) override;
-    state Unlock() override;
-    state Lock() override;
+    RetStatus Erase(uint32_t startAddress, uint32_t endAddress) override;
+    RetStatus Write(uint32_t startAddress, const void *data, size_t size) override;
+    RetStatus Read(uint32_t startAddress, void *buffer, size_t size) override;
+    RetStatus Unlock() override;
+    RetStatus Lock() override;
 
 private:
     static constexpr sectorRange GetSectorRange(uint32_t startAddress, uint32_t endAddress);
-    state ToggleFlashLock(bool lock);
+    RetStatus ToggleFlashLock(bool lock);
 };

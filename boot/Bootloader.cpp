@@ -8,67 +8,67 @@ Bootloader::Bootloader(beecom::BeeCOM &beecom, IFlashManager &flashManager)
 {
     packetHandlers = {
         nullptr,
-        &Bootloader::handleFlashStart,
-        &Bootloader::handleFlashData,
+        &Bootloader::HandleFlashStart,
+        &Bootloader::HandleFlashData,
         nullptr,
-        &Bootloader::handleValidateSignature,
-        &Bootloader::handleReadDataRequest,
-        &Bootloader::handleReadDataRequest};
-    setupPacketHandler();
+        &Bootloader::HandleValidateSignature,
+        &Bootloader::HandleReadDataRequest,
+        &Bootloader::HandleReadDataRequest};
+    SetupPacketHandler();
 }
 
-void Bootloader::setupPacketHandler()
+void Bootloader::SetupPacketHandler()
 {
     auto packetHandler = [this](const beecom::Packet &packet, bool crcValid, beecom::SendFunction send)
     {
         if (crcValid)
         {
-            handleValidPacket(packet);
+            HandleValidPacket(packet);
         }
         else
         {
-            sendResponse(false, packetType::invalidPacket);
+            SendResponse(false, packetType::invalidPacket);
         }
     };
 
     beecom_.setPacketHandler(packetHandler);
 }
 
-void Bootloader::handleValidPacket(const beecom::Packet &packet)
+void Bootloader::HandleValidPacket(const beecom::Packet &packet)
 {
     size_t index = static_cast<size_t>(packet.header.type);
 
     if ((index < packetHandlers.size()) && (packetHandlers[index] != nullptr))
     {
-        BootState targetState = determineTargetState(static_cast<packetType>(packet.header.type));
+        BootState targetState = DetermineTargetState(static_cast<packetType>(packet.header.type));
 
-        if (transitionState(targetState))
+        if (TransitionState(targetState))
         {
             auto handler = packetHandlers[index];
             auto status = (this->*handler)(packet);
 
-            if (status == retStatus::eNotOk)
+            if (status == RetStatus::eNotOk)
             {
-                transitionState(BootState::error);
-                sendResponse(false, static_cast<packetType>(packet.header.type));
+                TransitionState(BootState::error);
+                SendResponse(false, static_cast<packetType>(packet.header.type));
             }
-            else if (status == retStatus::eOk)
+            else if (status == RetStatus::eOk)
             {
-                sendResponse(true, static_cast<packetType>(packet.header.type));
+                SendResponse(true, static_cast<packetType>(packet.header.type));
             }
         }
         else
         {
-            sendResponse(false, static_cast<packetType>(packet.header.type));
+            SendResponse(false, static_cast<packetType>(packet.header.type));
         }
     }
     else
     {
-        sendResponse(false, static_cast<packetType>(packet.header.type));
+        SendResponse(false, static_cast<packetType>(packet.header.type));
     }
 }
 
-void Bootloader::sendResponse(bool success, packetType type, const uint8_t *data, size_t dataSize)
+void Bootloader::SendResponse(bool success, packetType type, const uint8_t *data, size_t dataSize)
 {
     const uint8_t ackValue = 0x55U;
     const uint8_t notAckValue = 0xAAU;
@@ -87,7 +87,7 @@ void Bootloader::sendResponse(bool success, packetType type, const uint8_t *data
     beecom_.send(responsePacket);
 }
 
-uint32_t Bootloader::extractAddress(const beecom::Packet &packet)
+uint32_t Bootloader::ExtractAddress(const beecom::Packet &packet)
 {
     uint32_t address = (static_cast<uint32_t>(packet.payload[0]) << 24U) |
                        (static_cast<uint32_t>(packet.payload[1]) << 16U) |
@@ -97,83 +97,83 @@ uint32_t Bootloader::extractAddress(const beecom::Packet &packet)
     return address;
 }
 
-Bootloader::retStatus Bootloader::handleFlashData(const beecom::Packet &packet)
+Bootloader::RetStatus Bootloader::HandleFlashData(const beecom::Packet &packet)
 {
-    uint32_t startAddress = extractAddress(packet);
+    uint32_t startAddress = ExtractAddress(packet);
     size_t dataSize = packet.header.length - sizeof(uint32_t);
     const uint8_t *dataStart = packet.payload + sizeof(uint32_t);
 
     auto fStatus = flashManager_.Write(startAddress, dataStart, dataSize);
 
-    return (fStatus == IFlashManager::state::eOk) ? retStatus::eOk : retStatus::eNotOk;
+    return (fStatus == IFlashManager::RetStatus::eOk) ? RetStatus::eOk : RetStatus::eNotOk;
 }
 
-Bootloader::retStatus Bootloader::handleFlashStart(const beecom::Packet &packet)
+Bootloader::RetStatus Bootloader::HandleFlashStart(const beecom::Packet &packet)
 {
     auto fStatus = flashManager_.Erase(FlashMapping::appStartAddress, FlashMapping::appEndAddress);
 
-    return (fStatus == IFlashManager::state::eOk) ? retStatus::eOk : retStatus::eNotOk;
+    return (fStatus == IFlashManager::RetStatus::eOk) ? RetStatus::eOk : RetStatus::eNotOk;
 }
 
-Bootloader::retStatus Bootloader::handleValidateSignature(const beecom::Packet &packet)
+Bootloader::RetStatus Bootloader::HandleValidateSignature(const beecom::Packet &packet)
 {
     flashManager_.Write(FlashMapping::appSignatureSizeAddress, packet.payload, packet.header.length);
-    bool valid = validateFirmware();
+    bool valid = ValidateFirmware();
 
     if (valid)
     {
-        transitionState(BootState::booting);
-        return retStatus::eOk;
+        TransitionState(BootState::booting);
+        return RetStatus::eOk;
     }
     else
     {
-        return retStatus::eNotOk;
+        return RetStatus::eNotOk;
     }
 }
 
-Bootloader::retStatus Bootloader::handleReadDataRequest(const beecom::Packet &packet)
+Bootloader::RetStatus Bootloader::HandleReadDataRequest(const beecom::Packet &packet)
 {
     uint8_t dataBuffer[FlashMapping::maxDataSize];
     size_t dataSize = 0;
     packetType type = static_cast<packetType>(packet.header.type);
-    Bootloader::retStatus status = Bootloader::retStatus::okNoResponse;
+    Bootloader::RetStatus status = Bootloader::RetStatus::okNoResponse;
 
     switch (type)
     {
     case packetType::getAppSignature:
-        flashManager_.Read(FlashMapping::appSignatureAddress, dataBuffer, FlashMapping::getAppSignatureSize());
-        dataSize = FlashMapping::getAppSignatureSize();
+        flashManager_.Read(FlashMapping::appSignatureAddress, dataBuffer, FlashMapping::GetAppSignatureSize());
+        dataSize = FlashMapping::GetAppSignatureSize();
         break;
     case packetType::getBootloaderVersion:
         dataSize = sizeof(BOOTLOADER_VERSION);
         std::memcpy(dataBuffer, BOOTLOADER_VERSION, dataSize);
         break;
     default:
-        status = Bootloader::retStatus::eNotOk;
+        status = Bootloader::RetStatus::eNotOk;
         break;
     }
 
-    if (status == Bootloader::retStatus::okNoResponse)
+    if (status == Bootloader::RetStatus::okNoResponse)
     {
-        sendResponse(true, type, dataBuffer, dataSize);
+        SendResponse(true, type, dataBuffer, dataSize);
     }
 
     return status;
 }
 
-bool Bootloader::validateFirmware()
+bool Bootloader::ValidateFirmware()
 {
     SecureBoot secureBoot;
-    SecureBoot::retStatus sStatus = secureBoot.validateFirmware(
+    SecureBoot::RetStatus sStatus = secureBoot.ValidateFirmware(
         reinterpret_cast<const unsigned char *>(FlashMapping::appSignatureAddress),
-        FlashMapping::getAppSignatureSize(),
+        FlashMapping::GetAppSignatureSize(),
         reinterpret_cast<const unsigned char *>(FlashMapping::appStartAddress),
         FlashMapping::appSize);
 
-    return sStatus == SecureBoot::retStatus::valid;
+    return sStatus == SecureBoot::RetStatus::valid;
 }
 
-Bootloader::BootState Bootloader::determineTargetState(packetType type)
+Bootloader::BootState Bootloader::DetermineTargetState(packetType type)
 {
     switch (type)
     {
@@ -188,7 +188,7 @@ Bootloader::BootState Bootloader::determineTargetState(packetType type)
     }
 }
 
-bool Bootloader::transitionState(BootState newState)
+bool Bootloader::TransitionState(BootState newState)
 {
     constexpr bool validTransitions[static_cast<int>(BootState::numStates)][static_cast<int>(BootState::numStates)] = {
                       /* idle, booting, erasing, flashing, verifying, error */
@@ -215,7 +215,7 @@ bool Bootloader::transitionState(BootState newState)
     }
 }
 
-void Bootloader::boot()
+void Bootloader::Boot()
 {
     uint32_t startTime = HAL_GetTick();
     uint32_t bootWaitTime = BootConfig::waitForBootActionMs;
@@ -230,16 +230,16 @@ void Bootloader::boot()
 
         if ((HAL_GetTick() - startTime > bootWaitTime) || (state == BootState::booting))
         {
-            if (transitionState(BootState::booting))
+            if (TransitionState(BootState::booting))
             {
-                if (validateFirmware())
+                if (ValidateFirmware())
                 {
-                    appJumper.jumpToApplication();
+                    appJumper.JumpToApplication();
                     return;
                 }
                 else
                 {
-                    transitionState(BootState::error);
+                    TransitionState(BootState::error);
                 }
             }
         }

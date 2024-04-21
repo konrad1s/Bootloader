@@ -32,18 +32,18 @@ public:
         numberOfPacketTypes
     };
 
-    enum class retStatus
+    enum class RetStatus
     {
         eOk,
         eNotOk,
         okNoResponse
     };
 
-    using HandlerFunction = retStatus (Bootloader::*)(const beecom::Packet &);
+    using HandlerFunction = RetStatus (Bootloader::*)(const beecom::Packet &);
 
     Bootloader(beecom::BeeCOM &beecom, IFlashManager &flashManager);
 
-    void boot();
+    void Boot();
 
 private:
     beecom::BeeCOM &beecom_;
@@ -52,17 +52,17 @@ private:
     BootState state{BootState::idle};
     std::array<HandlerFunction, static_cast<size_t>(packetType::numberOfPacketTypes)> packetHandlers;
 
-    void setupPacketHandler();
+    void SetupPacketHandler();
 
-   void handleValidPacket(const beecom::Packet& packet);
-    BootState determineTargetState(packetType type);
-    bool transitionState(BootState newState);
-    void sendResponse(bool success, packetType type, const uint8_t* data = nullptr, size_t dataSize = 0);
-    uint32_t extractAddress(const beecom::Packet& packet);
+    void HandleValidPacket(const beecom::Packet &packet);
+    BootState DetermineTargetState(packetType type);
+    bool TransitionState(BootState newState);
+    void SendResponse(bool success, packetType type, const uint8_t *data = nullptr, size_t dataSize = 0);
+    uint32_t ExtractAddress(const beecom::Packet &packet);
 
-    bool validateFirmware();
-    retStatus handleFlashData(const beecom::Packet& packet);
-    retStatus handleFlashStart(const beecom::Packet& packet);
-    retStatus handleValidateSignature(const beecom::Packet& packet);
-    retStatus handleReadDataRequest(const beecom::Packet &packet);
+    bool ValidateFirmware();
+    RetStatus HandleFlashData(const beecom::Packet &packet);
+    RetStatus HandleFlashStart(const beecom::Packet &packet);
+    RetStatus HandleValidateSignature(const beecom::Packet &packet);
+    RetStatus HandleReadDataRequest(const beecom::Packet &packet);
 };

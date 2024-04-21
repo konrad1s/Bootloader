@@ -18,7 +18,7 @@ SecureBoot::~SecureBoot()
     mbedtls_memory_buffer_alloc_free();
 }
 
-SecureBoot::retStatus SecureBoot::calculateSHA256(const unsigned char *data, size_t data_len, unsigned char *hash)
+SecureBoot::RetStatus SecureBoot::CalculateSHA256(const unsigned char *data, size_t data_len, unsigned char *hash)
 {
     mbedtls_sha256_context sha256_ctx;
     mbedtls_sha256_init(&sha256_ctx);
@@ -26,32 +26,32 @@ SecureBoot::retStatus SecureBoot::calculateSHA256(const unsigned char *data, siz
     if (mbedtls_sha256_starts(&sha256_ctx, 0) != 0)
     {
         mbedtls_sha256_free(&sha256_ctx);
-        return retStatus::hashCalculationError;
+        return RetStatus::hashCalculationError;
     }
 
     if (mbedtls_sha256_update(&sha256_ctx, data, data_len) != 0)
     {
         mbedtls_sha256_free(&sha256_ctx);
-        return retStatus::hashCalculationError;
+        return RetStatus::hashCalculationError;
     }
 
     if (mbedtls_sha256_finish(&sha256_ctx, hash) != 0)
     {
         mbedtls_sha256_free(&sha256_ctx);
-        return retStatus::hashCalculationError;
+        return RetStatus::hashCalculationError;
     }
 
     mbedtls_sha256_free(&sha256_ctx);
-    return retStatus::valid;
+    return RetStatus::valid;
 }
 
-SecureBoot::retStatus SecureBoot::validateFirmwareRSA(const unsigned char *signature, size_t sig_len,
+SecureBoot::RetStatus SecureBoot::ValidateFirmwareRSA(const unsigned char *signature, size_t sig_len,
                                                       const unsigned char *data, size_t data_len)
 {
     unsigned char hash[HASH_SIZE];
-    if (calculateSHA256(data, data_len, hash) != retStatus::valid)
+    if (CalculateSHA256(data, data_len, hash) != RetStatus::valid)
     {
-        return retStatus::hashCalculationError;
+        return RetStatus::hashCalculationError;
     }
 
     mbedtls_pk_context pkCtx;
@@ -61,39 +61,39 @@ SecureBoot::retStatus SecureBoot::validateFirmwareRSA(const unsigned char *signa
     if (mbedtls_pk_parse_public_key(&pkCtx, reinterpret_cast<const uint8_t *>(BootConfig::publicKey), publicKeyLen) != 0)
     {
         mbedtls_pk_free(&pkCtx);
-        return retStatus::publicKeyError;
+        return RetStatus::publicKeyError;
     }
 
     if (!mbedtls_pk_can_do(&pkCtx, MBEDTLS_PK_RSA))
     {
         mbedtls_pk_free(&pkCtx);
-        return retStatus::publicKeyError;
+        return RetStatus::publicKeyError;
     }
 
     mbedtls_rsa_context *rsaCtx = mbedtls_pk_rsa(pkCtx);
     if (mbedtls_rsa_set_padding(rsaCtx, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA256) != 0)
     {
         mbedtls_pk_free(&pkCtx);
-        return retStatus::paddingError;
+        return RetStatus::paddingError;
     }
 
     if (mbedtls_rsa_pkcs1_verify(rsaCtx, MBEDTLS_MD_SHA256, HASH_SIZE, hash, signature) != 0)
     {
         mbedtls_pk_free(&pkCtx);
-        return retStatus::invalidSignature;
+        return RetStatus::invalidSignature;
     }
 
     mbedtls_pk_free(&pkCtx);
-    return retStatus::valid;
+    return RetStatus::valid;
 }
 
-SecureBoot::retStatus SecureBoot::validateFirmwareECC(const unsigned char *signature, size_t sig_len,
+SecureBoot::RetStatus SecureBoot::ValidateFirmwareECC(const unsigned char *signature, size_t sig_len,
                                                       const unsigned char *data, size_t data_len)
 {
     unsigned char hash[HASH_SIZE];
-    if (calculateSHA256(data, data_len, hash) != retStatus::valid)
+    if (CalculateSHA256(data, data_len, hash) != RetStatus::valid)
     {
-        return retStatus::hashCalculationError;
+        return RetStatus::hashCalculationError;
     }
 
     mbedtls_pk_context pkCtx;
@@ -103,12 +103,12 @@ SecureBoot::retStatus SecureBoot::validateFirmwareECC(const unsigned char *signa
     if (mbedtls_pk_parse_public_key(&pkCtx, reinterpret_cast<const uint8_t *>(BootConfig::publicKey), publicKeyLen) != 0)
     {
         mbedtls_pk_free(&pkCtx);
-        return retStatus::publicKeyError;
+        return RetStatus::publicKeyError;
     }
 
     if (mbedtls_pk_can_do(&pkCtx, MBEDTLS_PK_ECKEY) != 1)
     {
-        return retStatus::publicKeyError;
+        return RetStatus::publicKeyError;
     }
 
     mbedtls_ecdsa_context ecdsaCtx;
@@ -118,29 +118,29 @@ SecureBoot::retStatus SecureBoot::validateFirmwareECC(const unsigned char *signa
     if (mbedtls_ecdsa_from_keypair(&ecdsaCtx, ecp) != 0)
     {
         mbedtls_ecdsa_free(&ecdsaCtx);
-        return retStatus::publicKeyError;
+        return RetStatus::publicKeyError;
     }
 
     if (mbedtls_ecdsa_read_signature(&ecdsaCtx, hash, sizeof(hash), signature, sig_len) != 0)
     {
         mbedtls_ecdsa_free(&ecdsaCtx);
-        return retStatus::invalidSignature;
+        return RetStatus::invalidSignature;
     }
 
     mbedtls_ecdsa_free(&ecdsaCtx);
     mbedtls_pk_free(&pkCtx);
 
-    return retStatus::valid;
+    return RetStatus::valid;
 }
 
-SecureBoot::retStatus SecureBoot::validateFirmware(const unsigned char *signature, size_t sig_len,
+SecureBoot::RetStatus SecureBoot::ValidateFirmware(const unsigned char *signature, size_t sig_len,
                                                    const unsigned char *data, size_t data_len)
 {
 #if (RSA_FIRMWARE_VALIDATION == 1)
-    return validateFirmwareRSA(signature, sig_len, data, data_len);
+    return ValidateFirmwareRSA(signature, sig_len, data, data_len);
 #elif (ECC_FIRMWARE_VALIDATION == 1)
-    return validateFirmwareECC(signature, sig_len, data, data_len);
+    return ValidateFirmwareECC(signature, sig_len, data, data_len);
 #else
-    return retStatus::invalidSignature;
+    return RetStatus::invalidSignature;
 #endif
 }

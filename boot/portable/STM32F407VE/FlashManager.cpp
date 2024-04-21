@@ -13,10 +13,10 @@ namespace FlashConstants
     constexpr uint32_t sectorNotFound = 0xFFFFFFFFU;
 }
 
-FlashManager::state FlashManager::ToggleFlashLock(bool lock)
+FlashManager::RetStatus FlashManager::ToggleFlashLock(bool lock)
 {
     auto operation = lock ? HAL_FLASH_Lock : HAL_FLASH_Unlock;
-    return (operation() == HAL_OK) ? state::eOk : state::eNotOk;
+    return (operation() == HAL_OK) ? RetStatus::eOk : RetStatus::eNotOk;
 }
 
 constexpr FlashManager::sectorRange FlashManager::GetSectorRange(uint32_t startAddress, uint32_t endAddress)
@@ -45,12 +45,12 @@ constexpr FlashManager::sectorRange FlashManager::GetSectorRange(uint32_t startA
     return range;
 }
 
-FlashManager::state FlashManager::Erase(uint32_t startAddress, uint32_t endAddress)
+FlashManager::RetStatus FlashManager::Erase(uint32_t startAddress, uint32_t endAddress)
 {
     auto range = GetSectorRange(startAddress, endAddress);
     if ((range.startSector == FlashConstants::sectorNotFound) || (range.sectorCount == 0U))
     {
-        return state::eNotOk;
+        return RetStatus::eNotOk;
     }
 
     FLASH_EraseInitTypeDef eraseData = {
@@ -60,26 +60,26 @@ FlashManager::state FlashManager::Erase(uint32_t startAddress, uint32_t endAddre
         .NbSectors = range.sectorCount,
         .VoltageRange = FLASH_VOLTAGE_RANGE_3};
 
-    if (ToggleFlashLock(false) != state::eOk)
+    if (ToggleFlashLock(false) != RetStatus::eOk)
     {
-        return state::eNotOk;
+        return RetStatus::eNotOk;
     }
 
     uint32_t sectorError = FlashConstants::sectorNotFound;
     auto status = HAL_FLASHEx_Erase(&eraseData, &sectorError);
     ToggleFlashLock(true);
 
-    return (status == HAL_OK) ? state::eOk : state::eNotOk;
+    return (status == HAL_OK) ? RetStatus::eOk : RetStatus::eNotOk;
 }
 
-FlashManager::state FlashManager::Write(uint32_t startAddress, const void *data, size_t size)
+FlashManager::RetStatus FlashManager::Write(uint32_t startAddress, const void *data, size_t size)
 {
     const uint8_t *pData = static_cast<const uint8_t *>(data);
     uint32_t currentAddress = startAddress;
 
-    if (ToggleFlashLock(false) != state::eOk)
+    if (ToggleFlashLock(false) != RetStatus::eOk)
     {
-        return state::eNotOk;
+        return RetStatus::eNotOk;
     }
 
     while (size > 0)
@@ -110,7 +110,7 @@ FlashManager::state FlashManager::Write(uint32_t startAddress, const void *data,
         if (HAL_FLASH_Program(programType, currentAddress, programData) != HAL_OK)
         {
             ToggleFlashLock(true);
-            return state::eNotOk;
+            return RetStatus::eNotOk;
         }
 
         currentAddress += increment;
@@ -119,22 +119,22 @@ FlashManager::state FlashManager::Write(uint32_t startAddress, const void *data,
     }
 
     ToggleFlashLock(true);
-    return state::eOk;
+    return RetStatus::eOk;
 }
 
-FlashManager::state FlashManager::Read(uint32_t startAddress, void* buffer, size_t size)
+FlashManager::RetStatus FlashManager::Read(uint32_t startAddress, void *buffer, size_t size)
 {
-    std::memcpy(buffer, reinterpret_cast<const void*>(startAddress), size);
+    std::memcpy(buffer, reinterpret_cast<const void *>(startAddress), size);
 
-    return state::eOk;
+    return RetStatus::eOk;
 }
 
-FlashManager::state FlashManager::Unlock()
+FlashManager::RetStatus FlashManager::Unlock()
 {
     return ToggleFlashLock(false);
 }
 
-FlashManager::state FlashManager::Lock()
+FlashManager::RetStatus FlashManager::Lock()
 {
     return ToggleFlashLock(true);
 }
