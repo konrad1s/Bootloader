@@ -110,7 +110,7 @@ Bootloader::RetStatus Bootloader::HandleFlashData(const beecom::Packet &packet)
 
 Bootloader::RetStatus Bootloader::HandleFlashStart(const beecom::Packet &packet)
 {
-    auto fStatus = flashManager_.Erase(FlashMapping::appStartAddress, FlashMapping::appEndAddress);
+    auto fStatus = flashManager_.Erase(FlashMapping::appMinStartAddress, FlashMapping::appMaxEndAddress);
 
     return (fStatus == IFlashManager::RetStatus::eOk) ? RetStatus::eOk : RetStatus::eNotOk;
 }
@@ -141,12 +141,12 @@ Bootloader::RetStatus Bootloader::HandleReadDataRequest(const beecom::Packet &pa
     switch (type)
     {
     case packetType::getAppSignature:
-        flashManager_.Read(FlashMapping::appSignatureAddress, dataBuffer, FlashMapping::GetAppSignatureSize());
-        dataSize = FlashMapping::GetAppSignatureSize();
+        flashManager_.Read(FlashMapping::appSignatureAddress, dataBuffer, FlashMapping::GetMetaData()->signatureSize);
+        dataSize = FlashMapping::GetMetaData()->signatureSize;
         break;
     case packetType::getBootloaderVersion:
-        dataSize = sizeof(BOOTLOADER_VERSION);
-        std::memcpy(dataBuffer, BOOTLOADER_VERSION, dataSize);
+        dataSize = sizeof(BootConfig::bootloaderVersion);
+        std::memcpy(dataBuffer, BootConfig::bootloaderVersion, dataSize);
         break;
     default:
         status = Bootloader::RetStatus::eNotOk;
@@ -166,9 +166,9 @@ bool Bootloader::ValidateFirmware()
     SecureBoot secureBoot;
     SecureBoot::RetStatus sStatus = secureBoot.ValidateFirmware(
         reinterpret_cast<const unsigned char *>(FlashMapping::appSignatureAddress),
-        FlashMapping::GetAppSignatureSize(),
-        reinterpret_cast<const unsigned char *>(FlashMapping::appStartAddress),
-        FlashMapping::appSize);
+        FlashMapping::GetMetaData()->signatureSize,
+        reinterpret_cast<const unsigned char *>(FlashMapping::GetMetaData()->appStartAddress),
+        FlashMapping::GetAppSize());
 
     return sStatus == SecureBoot::RetStatus::valid;
 }

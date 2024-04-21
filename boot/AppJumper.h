@@ -7,10 +7,11 @@ public:
     void JumpToApplication() const
     {
         using AppResetHandler = void (*)(void);
-        auto appResetHandlerPtr = reinterpret_cast<AppResetHandler>(FlashMapping::appStartAddress);
+        auto metaData = FlashMapping::GetMetaData();
+        auto appResetHandlerPtr = reinterpret_cast<AppResetHandler>(metaData->appStartAddress);
 
-        SCB->VTOR = FlashMapping::appStartAddress;
-        __set_MSP(*reinterpret_cast<volatile uint32_t *>(FlashMapping::appStartAddress));
+        SCB->VTOR = metaData->appStartAddress;
+        __set_MSP(*reinterpret_cast<volatile uint32_t *>(metaData->appStartAddress));
         appResetHandlerPtr();
     }
 };
