@@ -3,6 +3,8 @@
 #include "Bootloader.h"
 #include "BootConfig.h"
 
+constexpr uint32_t applicationValidFlag = 0x5A5A5A5AU;
+
 Bootloader::Bootloader(beecom::BeeCOM &beecom, IFlashManager &flashManager)
     : beecom_(beecom), flashManager_(flashManager)
 {
@@ -97,6 +99,11 @@ uint32_t Bootloader::ExtractAddress(const beecom::Packet &packet)
     return address;
 }
 
+inline bool Bootloader::IsPresentFlagSet()
+{
+    return FlashMapping::GetMetaData()->appPresentFlag == applicationValidFlag;
+}
+
 Bootloader::RetStatus Bootloader::HandleFlashData(const beecom::Packet &packet)
 {
     uint32_t startAddress = ExtractAddress(packet);
@@ -122,8 +129,17 @@ Bootloader::RetStatus Bootloader::HandleValidateSignature(const beecom::Packet &
 
     if (valid)
     {
-        TransitionState(BootState::booting);
-        return RetStatus::eOk;
+        /* Aplication valid, set the flag */
+        auto fStatus = flashManager_.Write(FlashMapping::appValidFlagAddress, &applicationValidFlag, sizeof(applicationValidFlag));
+        if (IFlashManager::RetStatus::eOk == fStatus)
+        {
+            TransitionState(BootState::booting);
+            return RetStatus::eOk;
+        }
+        else
+        {
+            return RetStatus::eNotOk;
+        }
     }
     else
     {
@@ -232,7 +248,12 @@ void Bootloader::Boot()
         {
             if (TransitionState(BootState::booting))
             {
-                if (ValidateFirmware())
+                bool presentFlagSet = IsPresentFlagSet();
+                bool firmwareValid = true;
+#if (VALIDATE_APP_BEFORE_BOOT == 1)
+                firmwareValid = ValidateFirmware();
+#endif
+                if (presentFlagSet && firmwareValid)
                 {
                     appJumper.JumpToApplication();
                     return;

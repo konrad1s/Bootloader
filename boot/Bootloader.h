@@ -59,6 +59,7 @@ private:
     bool TransitionState(BootState newState);
     void SendResponse(bool success, packetType type, const uint8_t *data = nullptr, size_t dataSize = 0);
     uint32_t ExtractAddress(const beecom::Packet &packet);
+    bool IsPresentFlagSet();
 
     bool ValidateFirmware();
     RetStatus HandleFlashData(const beecom::Packet &packet);

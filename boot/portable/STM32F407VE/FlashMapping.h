@@ -33,4 +33,5 @@ namespace FlashMapping
 
     constexpr uint32_t appSignatureSizeAddress = appMetaDataAddress + offsetof(MetaData, signatureSize);
     constexpr uint32_t appSignatureAddress = appMetaDataAddress + offsetof(MetaData, signature);
+    constexpr uint32_t appValidFlagAddress = appMetaDataAddress + offsetof(MetaData, appPresentFlag);
 };
