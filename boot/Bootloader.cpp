@@ -29,7 +29,7 @@ void Bootloader::SetupPacketHandler()
         }
         else
         {
-            SendResponse(false, packetType::invalidPacket);
+            SendNackResponse(packetType::invalidPacket);
         }
     };
 
@@ -52,41 +52,42 @@ void Bootloader::HandleValidPacket(const beecom::Packet &packet)
             if (status == RetStatus::eNotOk)
             {
                 TransitionState(BootState::error);
-                SendResponse(false, static_cast<packetType>(packet.header.type));
-            }
-            else if (status == RetStatus::eOk)
-            {
-                SendResponse(true, static_cast<packetType>(packet.header.type));
             }
         }
         else
         {
-            SendResponse(false, static_cast<packetType>(packet.header.type));
+            SendNackResponse(static_cast<packetType>(packet.header.type));
         }
-    }
-    else
-    {
-        SendResponse(false, static_cast<packetType>(packet.header.type));
     }
 }
 
-void Bootloader::SendResponse(bool success, packetType type, const uint8_t *data, size_t dataSize)
+void Bootloader::SendResponse(packetType type, const uint8_t *data, size_t dataSize)
 {
-    const uint8_t ackValue = 0x55U;
-    const uint8_t notAckValue = 0xAAU;
-
     beecom::Packet responsePacket;
     responsePacket.header.sop = 0xA5U;
     responsePacket.header.type = static_cast<uint8_t>(type);
-    responsePacket.header.length = 1U + dataSize;
-    responsePacket.payload[0] = success ? ackValue : notAckValue;
+    responsePacket.header.length = dataSize;
 
     if (data != nullptr && dataSize > 0)
     {
-        std::memcpy(responsePacket.payload + 1, data, dataSize);
+        std::memcpy(responsePacket.payload, data, dataSize);
     }
 
     beecom_.send(responsePacket);
+}
+
+void Bootloader::SendNackResponse(packetType type)
+{
+    const uint8_t nackValue = 0xAAU;
+
+    SendResponse(type, &nackValue, sizeof(nackValue));
+}
+
+void Bootloader::SendAckResponse(packetType type)
+{
+    const uint8_t ackValue = 0x55U;
+
+    SendResponse(type, &ackValue, sizeof(ackValue));
 }
 
 uint32_t Bootloader::ExtractAddress(const beecom::Packet &packet)
@@ -112,14 +113,32 @@ Bootloader::RetStatus Bootloader::HandleFlashData(const beecom::Packet &packet)
 
     auto fStatus = flashManager_.Write(startAddress, dataStart, dataSize);
 
-    return (fStatus == IFlashManager::RetStatus::eOk) ? RetStatus::eOk : RetStatus::eNotOk;
+    if (fStatus == IFlashManager::RetStatus::eOk)
+    {
+        SendAckResponse(static_cast<packetType>(packet.header.type));
+        return RetStatus::eOk;
+    }
+    else
+    {
+        SendNackResponse(static_cast<packetType>(packet.header.type));
+        return RetStatus::eNotOk;
+    }
 }
 
 Bootloader::RetStatus Bootloader::HandleFlashStart(const beecom::Packet &packet)
 {
     auto fStatus = flashManager_.Erase(FlashMapping::appMinStartAddress, FlashMapping::appMaxEndAddress);
 
-    return (fStatus == IFlashManager::RetStatus::eOk) ? RetStatus::eOk : RetStatus::eNotOk;
+    if (fStatus == IFlashManager::RetStatus::eOk)
+    {
+        SendAckResponse(static_cast<packetType>(packet.header.type));
+        return RetStatus::eOk;
+    }
+    else
+    {
+        SendNackResponse(static_cast<packetType>(packet.header.type));
+        return RetStatus::eNotOk;
+    }
 }
 
 Bootloader::RetStatus Bootloader::HandleValidateSignature(const beecom::Packet &packet)
@@ -134,15 +153,18 @@ Bootloader::RetStatus Bootloader::HandleValidateSignature(const beecom::Packet &
         if (IFlashManager::RetStatus::eOk == fStatus)
         {
             TransitionState(BootState::booting);
+            SendAckResponse(static_cast<packetType>(packet.header.type));
             return RetStatus::eOk;
         }
         else
         {
+            SendNackResponse(static_cast<packetType>(packet.header.type));
             return RetStatus::eNotOk;
         }
     }
     else
     {
+        SendNackResponse(static_cast<packetType>(packet.header.type));
         return RetStatus::eNotOk;
     }
 }
@@ -171,7 +193,7 @@ Bootloader::RetStatus Bootloader::HandleReadDataRequest(const beecom::Packet &pa
 
     if (status == Bootloader::RetStatus::okNoResponse)
     {
-        SendResponse(true, type, dataBuffer, dataSize);
+        SendResponse(type, dataBuffer, dataSize);
     }
 
     return status;

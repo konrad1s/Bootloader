@@ -52,16 +52,19 @@ private:
     BootState state{BootState::idle};
     std::array<HandlerFunction, static_cast<size_t>(packetType::numberOfPacketTypes)> packetHandlers;
 
-    void SetupPacketHandler();
-
-    void HandleValidPacket(const beecom::Packet &packet);
-    BootState DetermineTargetState(packetType type);
     bool TransitionState(BootState newState);
-    void SendResponse(bool success, packetType type, const uint8_t *data = nullptr, size_t dataSize = 0);
-    uint32_t ExtractAddress(const beecom::Packet &packet);
-    bool IsPresentFlagSet();
+    BootState DetermineTargetState(packetType type);
 
+    void SendResponse(packetType type, const uint8_t *data, size_t dataSize);
+    void SendAckResponse(packetType type);
+    void SendNackResponse(packetType type);
+
+    bool IsPresentFlagSet();
     bool ValidateFirmware();
+
+    void SetupPacketHandler();
+    void HandleValidPacket(const beecom::Packet &packet);
+    uint32_t ExtractAddress(const beecom::Packet &packet);
     RetStatus HandleFlashData(const beecom::Packet &packet);
     RetStatus HandleFlashStart(const beecom::Packet &packet);
     RetStatus HandleValidateSignature(const beecom::Packet &packet);
