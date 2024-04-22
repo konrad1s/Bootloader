@@ -197,7 +197,7 @@ Bootloader::BootState Bootloader::DetermineTargetState(packetType type)
         return BootState::erasing;
     case packetType::flashData:
         return BootState::flashing;
-    case packetType::flashMac:
+    case packetType::validateFlash:
         return BootState::verifying;
     default:
         return state;
