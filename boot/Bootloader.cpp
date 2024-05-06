@@ -19,21 +19,21 @@ Bootloader::Bootloader(beecom::BeeCOM &beecom, IFlashManager &flashManager)
     SetupPacketHandler();
 }
 
+void Bootloader::onPacketReceived(const beecom::Packet &packet, bool crcValid, void *beeComInstance)
+{
+    if (crcValid)
+    {
+        this->HandleValidPacket(packet);
+    }
+    else
+    {
+        this->SendNackResponse(packetType::invalidPacket);
+    }
+}
+
 void Bootloader::SetupPacketHandler()
 {
-    auto packetHandler = [this](const beecom::Packet &packet, bool crcValid, beecom::SendFunction send)
-    {
-        if (crcValid)
-        {
-            HandleValidPacket(packet);
-        }
-        else
-        {
-            SendNackResponse(packetType::invalidPacket);
-        }
-    };
-
-    beecom_.setPacketHandler(packetHandler);
+    beecom_.setObserver(this);
 }
 
 void Bootloader::HandleValidPacket(const beecom::Packet &packet)
@@ -73,7 +73,7 @@ void Bootloader::SendResponse(packetType type, const uint8_t *data, size_t dataS
         std::memcpy(responsePacket.payload, data, dataSize);
     }
 
-    beecom_.send(responsePacket);
+    // beecom_.send(responsePacket);
 }
 
 void Bootloader::SendNackResponse(packetType type)

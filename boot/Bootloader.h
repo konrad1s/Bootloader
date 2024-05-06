@@ -6,7 +6,7 @@
 #include "AppJumper.h"
 #include "SecureBoot.h"
 
-class Bootloader
+class Bootloader : beecom::IPacketObserver
 {
 public:
     enum class BootState
@@ -43,6 +43,7 @@ public:
 
     Bootloader(beecom::BeeCOM &beecom, IFlashManager &flashManager);
 
+    void onPacketReceived(const beecom::Packet &packet, bool crcValid, void *beeComInstance);
     void Boot();
 
 private:
@@ -62,6 +63,7 @@ private:
     bool IsPresentFlagSet();
     bool ValidateFirmware();
 
+    void PacketHandlerFunction(const beecom::Packet &packet, bool crcValid, beecom::SendFunction send);
     void SetupPacketHandler();
     void HandleValidPacket(const beecom::Packet &packet);
     uint32_t ExtractAddress(const beecom::Packet &packet);
