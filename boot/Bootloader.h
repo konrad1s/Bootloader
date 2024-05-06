@@ -6,9 +6,23 @@
 #include "AppJumper.h"
 #include "SecureBoot.h"
 
-class Bootloader : beecom::IPacketObserver
+class Bootloader;
+
+class BootPacketProcessor : public beecom::IPacketObserver
 {
 public:
+    explicit BootPacketProcessor(Bootloader &bootloader);
+    virtual void onPacketReceived(const beecom::Packet &packet, bool crcValid, void *beeComInstance) override;
+
+private:
+    Bootloader &bootloader_;
+};
+
+class Bootloader
+{
+public:
+    friend class BootPacketProcessor;
+
     enum class BootState
     {
         idle,
@@ -43,13 +57,13 @@ public:
 
     Bootloader(beecom::BeeCOM &beecom, IFlashManager &flashManager);
 
-    void onPacketReceived(const beecom::Packet &packet, bool crcValid, void *beeComInstance);
     void Boot();
 
 private:
     beecom::BeeCOM &beecom_;
     IFlashManager &flashManager_;
     AppJumper appJumper;
+    BootPacketProcessor packetProcessor{*this};
     BootState state{BootState::idle};
     std::array<HandlerFunction, static_cast<size_t>(packetType::numberOfPacketTypes)> packetHandlers;
 
@@ -63,8 +77,6 @@ private:
     bool IsPresentFlagSet();
     bool ValidateFirmware();
 
-    void PacketHandlerFunction(const beecom::Packet &packet, bool crcValid, beecom::SendFunction send);
-    void SetupPacketHandler();
     void HandleValidPacket(const beecom::Packet &packet);
     uint32_t ExtractAddress(const beecom::Packet &packet);
     RetStatus HandleFlashData(const beecom::Packet &packet);

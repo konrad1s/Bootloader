@@ -16,64 +16,34 @@ Bootloader::Bootloader(beecom::BeeCOM &beecom, IFlashManager &flashManager)
         &Bootloader::HandleValidateSignature,
         &Bootloader::HandleReadDataRequest,
         &Bootloader::HandleReadDataRequest};
-    SetupPacketHandler();
-}
-
-void Bootloader::onPacketReceived(const beecom::Packet &packet, bool crcValid, void *beeComInstance)
-{
-    if (crcValid)
-    {
-        this->HandleValidPacket(packet);
-    }
-    else
-    {
-        this->SendNackResponse(packetType::invalidPacket);
-    }
-}
-
-void Bootloader::SetupPacketHandler()
-{
-    beecom_.setObserver(this);
+    beecom_.setObserver(&packetProcessor);
 }
 
 void Bootloader::HandleValidPacket(const beecom::Packet &packet)
 {
     size_t index = static_cast<size_t>(packet.header.type);
 
-    if ((index < packetHandlers.size()) && (packetHandlers[index] != nullptr))
+    BootState targetState = DetermineTargetState(static_cast<packetType>(packet.header.type));
+
+    if (TransitionState(targetState))
     {
-        BootState targetState = DetermineTargetState(static_cast<packetType>(packet.header.type));
+        auto handler = packetHandlers[index];
+        auto status = (this->*handler)(packet);
 
-        if (TransitionState(targetState))
+        if (status == RetStatus::eNotOk)
         {
-            auto handler = packetHandlers[index];
-            auto status = (this->*handler)(packet);
-
-            if (status == RetStatus::eNotOk)
-            {
-                TransitionState(BootState::error);
-            }
+            TransitionState(BootState::error);
         }
-        else
-        {
-            SendNackResponse(static_cast<packetType>(packet.header.type));
-        }
+    }
+    else
+    {
+        SendNackResponse(static_cast<packetType>(packet.header.type));
     }
 }
 
 void Bootloader::SendResponse(packetType type, const uint8_t *data, size_t dataSize)
 {
-    beecom::Packet responsePacket;
-    responsePacket.header.sop = 0xA5U;
-    responsePacket.header.type = static_cast<uint8_t>(type);
-    responsePacket.header.length = dataSize;
-
-    if (data != nullptr && dataSize > 0)
-    {
-        std::memcpy(responsePacket.payload, data, dataSize);
-    }
-
-    // beecom_.send(responsePacket);
+    beecom_.send(static_cast<uint8_t>(type), data, dataSize);
 }
 
 void Bootloader::SendNackResponse(packetType type)
