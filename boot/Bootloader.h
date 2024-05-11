@@ -12,7 +12,7 @@ class BootPacketProcessor : public beecom::IPacketObserver
 {
 public:
     explicit BootPacketProcessor(Bootloader &bootloader);
-    virtual void onPacketReceived(const beecom::Packet &packet, bool crcValid, void *beeComInstance) override;
+    virtual void OnPacketReceived(const beecom::Packet &packet, bool crcValid, void *beeComInstance) override;
 
 private:
     Bootloader &bootloader_;

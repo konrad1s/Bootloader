@@ -16,7 +16,7 @@ Bootloader::Bootloader(beecom::BeeCOM &beecom, IFlashManager &flashManager)
         &Bootloader::HandleValidateSignature,
         &Bootloader::HandleReadDataRequest,
         &Bootloader::HandleReadDataRequest};
-    beecom_.setObserver(&packetProcessor);
+    beecom_.SetObserver(&packetProcessor);
 }
 
 void Bootloader::HandleValidPacket(const beecom::Packet &packet)
@@ -43,7 +43,7 @@ void Bootloader::HandleValidPacket(const beecom::Packet &packet)
 
 void Bootloader::SendResponse(packetType type, const uint8_t *data, size_t dataSize)
 {
-    beecom_.send(static_cast<uint8_t>(type), data, dataSize);
+    beecom_.Send(static_cast<uint8_t>(type), data, dataSize);
 }
 
 void Bootloader::SendNackResponse(packetType type)
@@ -230,7 +230,7 @@ void Bootloader::Boot()
 
     while (true)
     {
-        if (beecom_.receive() > 0U)
+        if (beecom_.Receive() > 0U)
         {
             startTime = HAL_GetTick();
             bootWaitTime = BootConfig::actionBootExtensionMs;
