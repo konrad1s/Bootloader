@@ -5,7 +5,7 @@
 
 constexpr uint32_t applicationValidFlag = 0x5A5A5A5AU;
 
-Bootloader::Bootloader(beecom::BeeCOM &beecom, IFlashManager &flashManager)
+Bootloader::Bootloader(beecom::BeeCOM &beecom, FlashManager &flashManager)
     : beecom_(beecom), flashManager_(flashManager)
 {
     packetHandlers = {
@@ -83,7 +83,7 @@ Bootloader::RetStatus Bootloader::HandleFlashData(const beecom::Packet &packet)
 
     auto fStatus = flashManager_.Write(startAddress, dataStart, dataSize);
 
-    if (fStatus == IFlashManager::RetStatus::eOk)
+    if (fStatus == FlashManager::RetStatus::eOk)
     {
         SendAckResponse(static_cast<packetType>(packet.header.type));
         return RetStatus::eOk;
@@ -99,7 +99,7 @@ Bootloader::RetStatus Bootloader::HandleFlashStart(const beecom::Packet &packet)
 {
     auto fStatus = flashManager_.Erase(FlashMapping::appMinStartAddress, FlashMapping::appMaxEndAddress);
 
-    if (fStatus == IFlashManager::RetStatus::eOk)
+    if (fStatus == FlashManager::RetStatus::eOk)
     {
         SendAckResponse(static_cast<packetType>(packet.header.type));
         return RetStatus::eOk;
@@ -120,7 +120,7 @@ Bootloader::RetStatus Bootloader::HandleValidateSignature(const beecom::Packet &
     {
         /* Aplication valid, set the flag */
         auto fStatus = flashManager_.Write(FlashMapping::appValidFlagAddress, &applicationValidFlag, sizeof(applicationValidFlag));
-        if (IFlashManager::RetStatus::eOk == fStatus)
+        if (FlashManager::RetStatus::eOk == fStatus)
         {
             TransitionState(BootState::booting);
             SendAckResponse(static_cast<packetType>(packet.header.type));

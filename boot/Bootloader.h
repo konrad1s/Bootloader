@@ -2,7 +2,7 @@
 
 #include <array>
 #include "BeeCom.h"
-#include "IFlashManager.h"
+#include "FlashManager.h"
 #include "AppJumper.h"
 #include "SecureBoot.h"
 
@@ -55,13 +55,13 @@ public:
 
     using HandlerFunction = RetStatus (Bootloader::*)(const beecom::Packet &);
 
-    Bootloader(beecom::BeeCOM &beecom, IFlashManager &flashManager);
+    Bootloader(beecom::BeeCOM &beecom, FlashManager &flashManager);
 
     void Boot();
 
 private:
     beecom::BeeCOM &beecom_;
-    IFlashManager &flashManager_;
+    FlashManager &flashManager_;
     AppJumper appJumper;
     BootPacketProcessor packetProcessor{*this};
     BootState state{BootState::idle};
