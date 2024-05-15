@@ -25,16 +25,13 @@ class HexFileProcessor:
                 processed_data.append((address, record.data))
         return processed_data
 
-    def calculate_hash(self, min_address, max_address):
+    def calculate_hash(self):
         """Calculate SHA-256 hash of the hex file from min_address to max_address, filling gaps with 0xFF."""
         if not self.ihex:
             raise ValueError("No hex file loaded.")
 
-        if min_address >= max_address:
-            raise ValueError("min_address must be less than max_address.")
-
-        data_map = {}
         base_address = 0
+        data_map = {}
         for record in self.ihex.records:
             if record.tag == IhexRecord.Tag.EXTENDED_LINEAR_ADDRESS:
                 base_address = int.from_bytes(record.data, byteorder='big') << 16
@@ -42,16 +39,18 @@ class HexFileProcessor:
                 base_address = int.from_bytes(record.data, byteorder='big') << 4
             elif record.tag == IhexRecord.Tag.DATA:
                 address = base_address + record.address
-                if min_address <= address < max_address:
-                    end_address = address + len(record.data)
-                    if end_address > max_address:
-                        trim_length = max_address - address
-                        data_map[address] = record.data[:trim_length]
-                    else:
-                        data_map[address] = record.data
+                data_map[address] = record.data
 
+        if not data_map:
+            raise ValueError("No data in hex file.")
+
+        min_address = min(data_map.keys())
+        max_address = max(addr + len(data) for addr, data in data_map.items())
+
+        print(f"Min address: {min_address}, Max address: {max_address}")
+
+        # Fill gaps with 0xFF
         full_data = bytearray((max_address - min_address) * [0xFF])
-
         for address, data in data_map.items():
             start_index = address - min_address
             full_data[start_index:start_index + len(data)] = data
