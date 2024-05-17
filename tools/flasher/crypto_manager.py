@@ -74,7 +74,6 @@ class CryptoManager:
                 data,
                 ec.ECDSA(utils.Prehashed(hashes.SHA256()))
             )
-            print(f"len of signature: {len(signature)}")
         else:
             raise TypeError("Unsupported key type")
         
