@@ -54,11 +54,16 @@ class MainTab(QWidget):
 
     def setupFileLayout(self, main_layout):
         layout = QVBoxLayout()
-
         read_bootloader_layout = QHBoxLayout()
+
+        self.enter_bootloader_button = QPushButton("Enter bootloader", self)
+        self.enter_bootloader_button.clicked.connect(self.enter_bootloader)
+        read_bootloader_layout.addWidget(self.enter_bootloader_button)
+        
         self.read_bootloader_button = QPushButton("Read bootloader version", self)
         self.read_bootloader_button.clicked.connect(self.read_bootloader_version)
         read_bootloader_layout.addWidget(self.read_bootloader_button)
+
         self.bootloader_version_label = QLabel("Bootloader version: Not read", self)
         read_bootloader_layout.addWidget(self.bootloader_version_label)
         layout.addLayout(read_bootloader_layout)
@@ -128,6 +133,14 @@ class MainTab(QWidget):
         logTextBox.setFormatter(formatter)
         logging.getLogger().addHandler(logTextBox)
         logging.getLogger().setLevel(logging.INFO)
+
+    def enter_bootloader(self):
+        try:
+            # TODO: implement the logic to enter bootloader mode
+            self.log("Entering bootloader mode...")
+        except Exception as e:
+            self.log(f"Error entering bootloader mode: {e}", level=logging.ERROR)
+            self.show_error_message(f"Error entering bootloader mode: {e}")
 
     def read_bootloader_version(self):
         try:
