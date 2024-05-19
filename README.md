@@ -7,7 +7,7 @@ The bootloader is a small program that allows you to update the firmware of your
 ## Features
 - Secure Boot: Ensures that only authenticated firmware can run on the device.
 - Firmware Update: Supports updating the firmware over any protocol.
-- Firmware Validation: Uses RSA/ECC for verifying the integrity and authenticity of the firmware.
+- Firmware Validation: Uses [RSA](https://en.wikipedia.org/wiki/RSA_(cryptosystem))/[ECC](https://en.wikipedia.org/wiki/Elliptic-curve_cryptography) for verifying the integrity and authenticity of the firmware.
 - Flasher Tool: A Python-based GUI tool for flashing firmware onto the device.
 
 ## Process Overview
@@ -19,6 +19,7 @@ The bootloader is a small program that allows you to update the firmware of your
  - If no frame is received, the bootloader checks if the application is valid (using RSA/ECC validation).
    * If valid, the bootloader jumps to the application.
    * If invalid, the bootloader remains in its current state.
+
 ![](https://github.com/konrad1s/Bootloader/blob/master/uml/bootToAppJump.png)
 ![](https://github.com/konrad1s/Bootloader/blob/master/uml/enterBootFromApp.png?raw=true)
 
@@ -29,4 +30,5 @@ The bootloader is a small program that allows you to update the firmware of your
  - The application sends a validate signature packet to the bootloader, which writes the signature data to flash memory and validates the firmware.
  - If the validation is successful, the bootloader sets a valid flag and transitions to the booting state, then jumps to the application.
  - If the validation fails, the bootloader sends a negative acknowledgment response.
+
 ![](https://github.com/konrad1s/Bootloader/blob/master/uml/reflashingAndValidation.png)
