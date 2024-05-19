@@ -1,0 +1,34 @@
+@startuml
+
+title Bootloader to Application Jump Process
+
+actor "User/FlasherApp" as UF
+
+participant "Bootloader" as B
+participant "Application" as A
+
+UF -> B: Power On
+activate B
+
+B -> B: BootConfig::waitForBootActionMs
+note right
+  The waitForBootActionMs timeout ensures that we are
+  able to reflash the application in case of an application bug.
+end note
+
+alt Frame received from User/FlasherApp
+    UF -> B: Send Frame
+    B -> UF: Acknowledge Frame
+    B -> B: Extend wait time by BootConfig::actionBootExtensionMs
+else No Frame received
+    alt Application is invalid
+        B -> B: Stay in Bootloader
+    else Application is valid
+        B -> A: Jump to Application
+        deactivate B
+        activate A
+        A -> A: Application runs
+    end
+end
+
+@enduml

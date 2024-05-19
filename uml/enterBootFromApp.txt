@@ -1,0 +1,36 @@
+@startuml
+
+title Enter Bootloader Request from Application
+
+actor "User/FlasherApp" as UF
+
+participant "Application" as A
+participant "Bootloader" as B
+
+UF -> A: Send "Enter Bootloader" request
+activate A
+
+A -> B: Reset and Enter Bootloader
+deactivate A
+activate B
+
+B -> UF: Send response from Bootloader
+
+B -> B: Wait for action for BootConfig::actionBootExtensionMs
+
+alt Frame received from FlasherApp
+    UF -> B: Send Frame
+    B -> UF: Acknowledge Frame
+    B -> B: Extend wait time by BootConfig::actionBootExtensionMs
+else No Frame received or timeout
+    alt Application is invalid
+        B -> B: Stay in Bootloader - wait for reflash
+    else Application is valid
+        B -> A: Jump to Application
+        deactivate B
+        activate A
+        A -> A: Application runs
+    end
+end
+
+@enduml

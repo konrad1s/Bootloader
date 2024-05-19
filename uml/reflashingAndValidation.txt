@@ -1,0 +1,54 @@
+@startuml
+
+title Reflashing and Signature Validation Process
+
+actor "User/FlasherApp" as UF
+
+participant "Bootloader" as B
+participant "FlashManager" as FM
+participant "SecureBoot" as SB
+participant "AppJumper" as AJ
+
+== Flash Start ==
+UF -> B: Send Flash Start Packet
+activate B
+B -> FM: Erase Application Area
+alt Erase Successful
+    B -> UF: Send Ack Response
+else Erase Failed
+    B -> UF: Send Nack Response
+    deactivate B
+    return
+end
+
+== Flash Data ==
+loop Until All Data Received
+    UF -> B: Send Flash Data Packet
+    B -> FM: Write Data
+    alt Write Successful
+        B -> UF: Send Ack Response
+    else Write Failed
+        B -> UF: Send Nack Response
+        deactivate B
+        return
+    end
+end
+
+== Validate Signature ==
+UF -> B: Send Validate Signature Packet
+B -> FM: Write Signature Data
+B -> SB: Validate Firmware
+alt Validation Successful
+    B -> FM: Write Valid Flag
+    alt Write Valid Flag Successful
+        B -> UF: Send Ack Response
+        B -> B: Transition to Booting State
+        B -> AJ: Jump to Application
+    else Write Valid Flag Failed
+        B -> UF: Send Nack Response
+    end
+else Validation Failed
+    B -> UF: Send Nack Response
+end
+
+@enduml
