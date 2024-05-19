@@ -2,6 +2,7 @@
 #include <algorithm>
 #include "Bootloader.h"
 #include "BootConfig.h"
+#include "AppJumper.h"
 
 constexpr uint32_t applicationValidFlag = 0x5A5A5A5AU;
 
@@ -247,6 +248,7 @@ void Bootloader::Boot()
 #endif
                 if (presentFlagSet && firmwareValid)
                 {
+                    AppJumper appJumper;
                     appJumper.JumpToApplication();
                     return;
                 }

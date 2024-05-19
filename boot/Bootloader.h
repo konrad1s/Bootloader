@@ -3,7 +3,6 @@
 #include <array>
 #include "BeeCom.h"
 #include "FlashManager.h"
-#include "AppJumper.h"
 #include "SecureBoot.h"
 
 class Bootloader;
@@ -62,7 +61,6 @@ public:
 private:
     beecom::BeeCOM &beecom_;
     FlashManager &flashManager_;
-    AppJumper appJumper;
     BootPacketProcessor packetProcessor{*this};
     BootState state{BootState::idle};
     std::array<HandlerFunction, static_cast<size_t>(packetType::numberOfPacketTypes)> packetHandlers;
