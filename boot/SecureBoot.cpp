@@ -139,8 +139,11 @@ SecureBoot::RetStatus SecureBoot::ValidateFirmwareECC(
     return RetStatus::valid;
 }
 
-SecureBoot::RetStatus
-SecureBoot::ValidateFirmware(const unsigned char* signature, size_t sig_len, const unsigned char* data, size_t data_len)
+SecureBoot::RetStatus SecureBoot::ValidateFirmware(
+    const unsigned char* signature,
+    size_t sig_len,
+    const unsigned char* data,
+    size_t data_len)
 {
 #if (RSA_FIRMWARE_VALIDATION == 1)
     return ValidateFirmwareRSA(signature, sig_len, data, data_len);

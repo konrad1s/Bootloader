@@ -1,1 +1,8 @@
 examples/*
+
+**/.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+
+*.pyc
+*.log

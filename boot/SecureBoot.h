@@ -27,14 +27,23 @@ class SecureBoot
     SecureBoot();
     ~SecureBoot();
 
-    RetStatus
-    ValidateFirmware(const unsigned char* signature, size_t sig_len, const unsigned char* data, size_t data_len);
+    RetStatus ValidateFirmware(
+        const unsigned char* signature,
+        size_t sig_len,
+        const unsigned char* data,
+        size_t data_len);
 
   private:
     unsigned char mbedtlsBuff[8192];
-    RetStatus
-    ValidateFirmwareRSA(const unsigned char* signature, size_t sig_len, const unsigned char* data, size_t data_len);
-    RetStatus
-    ValidateFirmwareECC(const unsigned char* signature, size_t sig_len, const unsigned char* data, size_t data_len);
+    RetStatus ValidateFirmwareRSA(
+        const unsigned char* signature,
+        size_t sig_len,
+        const unsigned char* data,
+        size_t data_len);
+    RetStatus ValidateFirmwareECC(
+        const unsigned char* signature,
+        size_t sig_len,
+        const unsigned char* data,
+        size_t data_len);
     RetStatus CalculateSHA256(const unsigned char* data, size_t data_len, unsigned char* hash);
 };
