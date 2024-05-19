@@ -14,7 +14,7 @@ extern "C"
 
 class SecureBoot
 {
-public:
+  public:
     enum class RetStatus
     {
         valid,
@@ -27,14 +27,14 @@ public:
     SecureBoot();
     ~SecureBoot();
 
-    RetStatus ValidateFirmware(const unsigned char *signature, size_t sig_len,
-                               const unsigned char *data, size_t data_len);
+    RetStatus
+    ValidateFirmware(const unsigned char* signature, size_t sig_len, const unsigned char* data, size_t data_len);
 
-private:
+  private:
     unsigned char mbedtlsBuff[8192];
-    RetStatus ValidateFirmwareRSA(const unsigned char *signature, size_t sig_len,
-                                  const unsigned char *data, size_t data_len);
-    RetStatus ValidateFirmwareECC(const unsigned char *signature, size_t sig_len,
-                                  const unsigned char *data, size_t data_len);
-    RetStatus CalculateSHA256(const unsigned char *data, size_t data_len, unsigned char *hash);
+    RetStatus
+    ValidateFirmwareRSA(const unsigned char* signature, size_t sig_len, const unsigned char* data, size_t data_len);
+    RetStatus
+    ValidateFirmwareECC(const unsigned char* signature, size_t sig_len, const unsigned char* data, size_t data_len);
+    RetStatus CalculateSHA256(const unsigned char* data, size_t data_len, unsigned char* hash);
 };

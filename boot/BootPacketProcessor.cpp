@@ -2,7 +2,7 @@
 
 BootPacketProcessor::BootPacketProcessor(Bootloader& bootloader) : bootloader_(bootloader) {}
 
-void BootPacketProcessor::OnPacketReceived(const beecom::Packet &packet, bool crcValid, void *beeComInstance)
+void BootPacketProcessor::OnPacketReceived(const beecom::Packet& packet, bool crcValid, void* beeComInstance)
 {
     if (!crcValid)
     {

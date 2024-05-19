@@ -4,7 +4,7 @@
 
 class AppJumper
 {
-public:
+  public:
     void JumpToApplication() const
     {
         auto metaData = FlashMapping::GetMetaData();
@@ -19,7 +19,7 @@ public:
             ;
     }
 
-private:
+  private:
     using AppResetHandler = void (*)(void);
 
     void DisableInterrupts() const
@@ -34,9 +34,7 @@ private:
         SysTick->CTRL = 0U;
         SCB->ICSR |= SCB_ICSR_PENDSTCLR_Msk;
 
-        SCB->SHCSR &= ~(SCB_SHCSR_USGFAULTENA_Msk |
-                        SCB_SHCSR_BUSFAULTENA_Msk |
-                        SCB_SHCSR_MEMFAULTENA_Msk);
+        SCB->SHCSR &= ~(SCB_SHCSR_USGFAULTENA_Msk | SCB_SHCSR_BUSFAULTENA_Msk | SCB_SHCSR_MEMFAULTENA_Msk);
     }
 
     void SetVectorTableAddress(uint32_t address) const
@@ -46,12 +44,12 @@ private:
 
     void SetMainStackPointer(uint32_t address) const
     {
-        __set_MSP(*reinterpret_cast<volatile uint32_t *>(address));
+        __set_MSP(*reinterpret_cast<volatile uint32_t*>(address));
     }
 
     void JumpToResetHandler(uint32_t address) const
     {
-        auto appResetHandlerPtr = reinterpret_cast<AppResetHandler>(*(volatile uint32_t *)(address + 4U));
+        auto appResetHandlerPtr = reinterpret_cast<AppResetHandler>(*(volatile uint32_t*)(address + 4U));
 
         __DSB();
         __ISB();

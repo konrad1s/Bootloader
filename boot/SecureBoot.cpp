@@ -18,7 +18,7 @@ SecureBoot::~SecureBoot()
     mbedtls_memory_buffer_alloc_free();
 }
 
-SecureBoot::RetStatus SecureBoot::CalculateSHA256(const unsigned char *data, size_t data_len, unsigned char *hash)
+SecureBoot::RetStatus SecureBoot::CalculateSHA256(const unsigned char* data, size_t data_len, unsigned char* hash)
 {
     mbedtls_sha256_context sha256_ctx;
     mbedtls_sha256_init(&sha256_ctx);
@@ -45,8 +45,11 @@ SecureBoot::RetStatus SecureBoot::CalculateSHA256(const unsigned char *data, siz
     return RetStatus::valid;
 }
 
-SecureBoot::RetStatus SecureBoot::ValidateFirmwareRSA(const unsigned char *signature, size_t sig_len,
-                                                      const unsigned char *data, size_t data_len)
+SecureBoot::RetStatus SecureBoot::ValidateFirmwareRSA(
+    const unsigned char* signature,
+    size_t sig_len,
+    const unsigned char* data,
+    size_t data_len)
 {
     unsigned char hash[HASH_SIZE];
     if (CalculateSHA256(data, data_len, hash) != RetStatus::valid)
@@ -57,8 +60,8 @@ SecureBoot::RetStatus SecureBoot::ValidateFirmwareRSA(const unsigned char *signa
     mbedtls_pk_context pkCtx;
     mbedtls_pk_init(&pkCtx);
 
-    size_t publicKeyLen = strlen((const char *)BootConfig::publicKey) + 1;
-    if (mbedtls_pk_parse_public_key(&pkCtx, reinterpret_cast<const uint8_t *>(BootConfig::publicKey), publicKeyLen) != 0)
+    size_t publicKeyLen = strlen((const char*)BootConfig::publicKey) + 1;
+    if (mbedtls_pk_parse_public_key(&pkCtx, reinterpret_cast<const uint8_t*>(BootConfig::publicKey), publicKeyLen) != 0)
     {
         mbedtls_pk_free(&pkCtx);
         return RetStatus::publicKeyError;
@@ -70,7 +73,7 @@ SecureBoot::RetStatus SecureBoot::ValidateFirmwareRSA(const unsigned char *signa
         return RetStatus::publicKeyError;
     }
 
-    mbedtls_rsa_context *rsaCtx = mbedtls_pk_rsa(pkCtx);
+    mbedtls_rsa_context* rsaCtx = mbedtls_pk_rsa(pkCtx);
     if (mbedtls_rsa_set_padding(rsaCtx, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA256) != 0)
     {
         mbedtls_pk_free(&pkCtx);
@@ -87,8 +90,11 @@ SecureBoot::RetStatus SecureBoot::ValidateFirmwareRSA(const unsigned char *signa
     return RetStatus::valid;
 }
 
-SecureBoot::RetStatus SecureBoot::ValidateFirmwareECC(const unsigned char *signature, size_t sig_len,
-                                                      const unsigned char *data, size_t data_len)
+SecureBoot::RetStatus SecureBoot::ValidateFirmwareECC(
+    const unsigned char* signature,
+    size_t sig_len,
+    const unsigned char* data,
+    size_t data_len)
 {
     unsigned char hash[HASH_SIZE];
     if (CalculateSHA256(data, data_len, hash) != RetStatus::valid)
@@ -99,8 +105,8 @@ SecureBoot::RetStatus SecureBoot::ValidateFirmwareECC(const unsigned char *signa
     mbedtls_pk_context pkCtx;
     mbedtls_pk_init(&pkCtx);
 
-    size_t publicKeyLen = strlen((const char *)BootConfig::publicKey) + 1;
-    if (mbedtls_pk_parse_public_key(&pkCtx, reinterpret_cast<const uint8_t *>(BootConfig::publicKey), publicKeyLen) != 0)
+    size_t publicKeyLen = strlen((const char*)BootConfig::publicKey) + 1;
+    if (mbedtls_pk_parse_public_key(&pkCtx, reinterpret_cast<const uint8_t*>(BootConfig::publicKey), publicKeyLen) != 0)
     {
         mbedtls_pk_free(&pkCtx);
         return RetStatus::publicKeyError;
@@ -114,7 +120,7 @@ SecureBoot::RetStatus SecureBoot::ValidateFirmwareECC(const unsigned char *signa
     mbedtls_ecdsa_context ecdsaCtx;
     mbedtls_ecdsa_init(&ecdsaCtx);
 
-    mbedtls_ecp_keypair *ecp = mbedtls_pk_ec(pkCtx);
+    mbedtls_ecp_keypair* ecp = mbedtls_pk_ec(pkCtx);
     if (mbedtls_ecdsa_from_keypair(&ecdsaCtx, ecp) != 0)
     {
         mbedtls_ecdsa_free(&ecdsaCtx);
@@ -133,8 +139,8 @@ SecureBoot::RetStatus SecureBoot::ValidateFirmwareECC(const unsigned char *signa
     return RetStatus::valid;
 }
 
-SecureBoot::RetStatus SecureBoot::ValidateFirmware(const unsigned char *signature, size_t sig_len,
-                                                   const unsigned char *data, size_t data_len)
+SecureBoot::RetStatus
+SecureBoot::ValidateFirmware(const unsigned char* signature, size_t sig_len, const unsigned char* data, size_t data_len)
 {
 #if (RSA_FIRMWARE_VALIDATION == 1)
     return ValidateFirmwareRSA(signature, sig_len, data, data_len);
