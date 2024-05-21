@@ -1,8 +1,9 @@
-examples/*
-
 **/.vscode/*
 !.vscode/tasks.json
 !.vscode/launch.json
+
+*.mxproject
+**/build/*
 
 *.pyc
 *.log
