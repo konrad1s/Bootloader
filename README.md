@@ -95,16 +95,20 @@ You need to define the vector table addresses in line with the linker configurat
 #endif /* VECT_TAB_SRAM */
 #endif /* USER_VECT_TAB_ADDRESS */
 ```
+Example memory map (used in STM32F407VE example):
+![](https://github.com/konrad1s/Bootloader/blob/master/images/memoryOrgSTM32F4.png)
 
 6. **Using the Python Flasher Tool**\
 A Python-based GUI tool is provided for flashing firmware, erasing firmware, reading the bootloader version, and validating the application. This tool also allows you to generate and manage key pairs for secure boot.
 
 Software Download Tab:
 - Select UART port, set baud rate, and connect to the device.
-- Enter bootloader mode, read bootloader version, select .hex file, load key, erase firmware, flash firmware, and validate the application.
+- Enter bootloader mode, read bootloader version, select .hex file, load key, erase firmware, flash firmware, and validate the application.\
+![](https://github.com/konrad1s/Bootloader/blob/master/images/pythonAppSwDownload.png)
 
 Security Tab:
-- Select key type (RSA or ECC), enter password for encrypting the private key, generate key pair, save private key, save public key, and display the public key to be copied into BootConfig.h.
+- Select key type (RSA or ECC), enter password for encrypting the private key, generate key pair, save private key, save public key, and display the public key to be copied into BootConfig.h.\
+![](https://github.com/konrad1s/Bootloader/blob/master/images/pythonAppSecurity.png)
 
 ## Process Overview
 ### Bootloader to Application Jump
@@ -116,8 +120,8 @@ Security Tab:
    * If valid, the bootloader jumps to the application.
    * If invalid, the bootloader remains in its current state.
 
-![](https://github.com/konrad1s/Bootloader/blob/master/uml/bootToAppJump.png)
-![](https://github.com/konrad1s/Bootloader/blob/master/uml/enterBootFromApp.png?raw=true)
+![](https://github.com/konrad1s/Bootloader/blob/master/images/bootToAppJump.png)
+![](https://github.com/konrad1s/Bootloader/blob/master/images/enterBootFromApp.png)
 
 ### Reflashing and Signature Validation
 1. Flash Start: The application sends a flash start packet to the bootloader, which erases the application area.
@@ -127,4 +131,4 @@ Security Tab:
  - If the validation is successful, the bootloader sets a valid flag and transitions to the booting state, then jumps to the application.
  - If the validation fails, the bootloader sends a negative acknowledgment response.
 
-![](https://github.com/konrad1s/Bootloader/blob/master/uml/reflashingAndValidation.png)
+![](https://github.com/konrad1s/Bootloader/blob/master/images/reflashingAndValidation.png)
