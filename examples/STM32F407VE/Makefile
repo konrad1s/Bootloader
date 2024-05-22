@@ -30,6 +30,9 @@ OPT = -Os
 #######################################
 # Build path
 BUILD_DIR = build
+MBEDTLS_DIR = ../../ext/mbedtls
+BEECOM_DIR = ../../ext/beecom
+BOOT_DIR = ../../boot
 
 ######################################
 # source
@@ -55,41 +58,42 @@ Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c \
 Core/Src/system_stm32f4xx.c \
-../../ext/mbedtls/library/pk.c \
-../../ext/mbedtls/library/pkparse.c \
-../../ext/mbedtls/library/sha256.c	\ \
-../../ext/mbedtls/library/platform_util.c \
-../../ext/mbedtls/library/pem.c \
-../../ext/mbedtls/library/rsa.c \
-../../ext/mbedtls/library/bignum.c \
-../../ext/mbedtls/library/bignum_core.c \
-../../ext/mbedtls/library/asn1parse.c \
-../../ext/mbedtls/library/pk_ecc.c \
-../../ext/mbedtls/library/ecp.c \
-../../ext/mbedtls/library/pk_wrap.c \
-../../ext/mbedtls/library/md.c \
-../../ext/mbedtls/library/rsa_alt_helpers.c \
-../../ext/mbedtls/library/platform.c \
-../../ext/mbedtls/library/constant_time.c \
-../../ext/mbedtls/library/oid.c \
-../../ext/mbedtls/library/memory_buffer_alloc.c \
-../../ext/mbedtls/library/base64.c \
-../../ext/mbedtls/library/ecdsa.c \
-../../ext/mbedtls/library/asn1write.c \
-../../ext/mbedtls/library/ecp_curves.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_crc.c
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_crc.c	\
+$(MBEDTLS_DIR)/library/pk.c \
+$(MBEDTLS_DIR)/library/pkparse.c \
+$(MBEDTLS_DIR)/library/sha256.c	\ \
+$(MBEDTLS_DIR)/library/platform_util.c \
+$(MBEDTLS_DIR)/library/pem.c \
+$(MBEDTLS_DIR)/library/rsa.c \
+$(MBEDTLS_DIR)/library/bignum.c \
+$(MBEDTLS_DIR)/library/bignum_core.c \
+$(MBEDTLS_DIR)/library/asn1parse.c \
+$(MBEDTLS_DIR)/library/pk_ecc.c \
+$(MBEDTLS_DIR)/library/ecp.c \
+$(MBEDTLS_DIR)/library/pk_wrap.c \
+$(MBEDTLS_DIR)/library/md.c \
+$(MBEDTLS_DIR)/library/rsa_alt_helpers.c \
+$(MBEDTLS_DIR)/library/platform.c \
+$(MBEDTLS_DIR)/library/constant_time.c \
+$(MBEDTLS_DIR)/library/oid.c \
+$(MBEDTLS_DIR)/library/memory_buffer_alloc.c \
+$(MBEDTLS_DIR)/library/base64.c \
+$(MBEDTLS_DIR)/library/ecdsa.c \
+$(MBEDTLS_DIR)/library/asn1write.c \
+$(MBEDTLS_DIR)/library/ecp_curves.c \
 
 
-CXX_SOURCES = ../../ext/beecom/Src/BeeCom.cpp \
-../../ext/beecom/Src/BeeComCrc.cpp \
-../../ext/beecom/Src/BeeComDeserializer.cpp \
-../../ext/beecom/Src/BeeComSerializer.cpp \
-../../ext/beecom/Src/BeeComBuffer.cpp \
+CXX_SOURCES = \
 Core/Src/main.cpp \
-../../boot/Bootloader.cpp	\
-../../boot/portable/STM32F407VE/FlashManager.cpp	\
-../../boot/SecureBoot.cpp	\
-../../boot/BootPacketProcessor.cpp	\
+$(BEECOM_DIR)/Src/BeeCom.cpp \
+$(BEECOM_DIR)/Src/BeeComCrc.cpp \
+$(BEECOM_DIR)/Src/BeeComDeserializer.cpp \
+$(BEECOM_DIR)/Src/BeeComSerializer.cpp \
+$(BEECOM_DIR)/Src/BeeComBuffer.cpp \
+$(BOOT_DIR)/Bootloader.cpp	\
+$(BOOT_DIR)/BootPacketProcessor.cpp	\
+$(BOOT_DIR)/SecureBoot.cpp	\
+$(BOOT_DIR)/portable/STM32F407VE/FlashManager.cpp	\
 
 # ASM sources
 ASM_SOURCES =  \
@@ -156,14 +160,13 @@ C_INCLUDES =  \
 -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/CMSIS/Include	\
--I../../ext/mbedtls/include/	\
--IDrivers/CMSIS/Include
+-I$(MBEDTLS_DIR)/include/	\
 
 CXX_INCLUDES = $(C_INCLUDES) \
--I../../boot	\
--I../../boot/config	\
--I../../ext/beecom/Inc	\
--I../../boot/portable/STM32F407VE/
+-I$(BEECOM_DIR)/Inc	\
+-I$(BOOT_DIR)/	\
+-I$(BOOT_DIR)/config	\
+-I$(BOOT_DIR)/portable/STM32F407VE/
 
 
 # compile gcc flags
