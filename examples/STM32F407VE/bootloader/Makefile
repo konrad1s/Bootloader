@@ -149,7 +149,8 @@ AS_DEFS =
 # C defines
 C_DEFS =  \
 -DUSE_HAL_DRIVER \
--DSTM32F407xx
+-DSTM32F407xx	\
+-DMBEDTLS_CONFIG_FILE=\"BootMbedtlsConfig.h\"
 
 
 # AS includes
@@ -163,6 +164,7 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/CMSIS/Include	\
 -I$(MBEDTLS_DIR)/include/	\
+-I$(BOOT_DIR)/config/mbedtls
 
 CXX_INCLUDES = $(C_INCLUDES) \
 -I$(BEECOM_DIR)/Inc	\
