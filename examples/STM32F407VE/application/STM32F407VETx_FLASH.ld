@@ -61,7 +61,8 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 /* Specify the memory areas */
 MEMORY
 {
-RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 128K
+RAM (xrw)           : ORIGIN = 0x20000000, LENGTH = 128K - 8 /* 8 bytes are reserved for the no_init section */
+NO_INIT_RAM (xrw)   : ORIGIN = 0x2001FFF0, LENGTH = 8
 CCMRAM (xrw)      : ORIGIN = 0x10000000, LENGTH = 64K
 FLASH (rx)      : ORIGIN = 0x8020200, LENGTH = 512K - 0x20200
 }
@@ -165,6 +166,15 @@ SECTIONS
     _eccmram = .;       /* create a global symbol at ccmram end */
   } >CCMRAM AT> FLASH
 
+  /* Define the no_init section with a fixed size of 8 bytes */
+  .no_init_ram (NOLOAD):
+  {
+    . = ALIGN(4);
+    _sno_init_ram = .;
+    *(.no_init_ram)
+    . = ALIGN(4);
+    _eno_init_ram = .;
+  } >NO_INIT_RAM
   
   /* Uninitialized data section */
   . = ALIGN(4);

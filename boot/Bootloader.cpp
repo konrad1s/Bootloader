@@ -75,6 +75,11 @@ inline bool Bootloader::IsPresentFlagSet()
     return FlashMapping::GetMetaData()->appPresentFlag == applicationValidFlag;
 }
 
+inline bool Bootloader::IsJumpToBootFlagSet()
+{
+    return *FlashMapping::GetJumpToBootFlag() == FlashMapping::bootFlagValue;
+}
+
 Bootloader::RetStatus Bootloader::HandleFlashData(const beecom::Packet& packet)
 {
     uint32_t startAddress = ExtractAddress(packet);
@@ -227,7 +232,18 @@ bool Bootloader::TransitionState(BootState newState)
 void Bootloader::Boot()
 {
     uint32_t startTime = HAL_GetTick();
-    uint32_t bootWaitTime = BootConfig::waitForBootActionMs;
+    uint32_t bootWaitTime;
+
+    volatile uint32_t bootFlag = *FlashMapping::GetJumpToBootFlag();
+
+    if (IsJumpToBootFlagSet())
+    {
+        bootWaitTime = BootConfig::actionBootExtensionMs;
+    }
+    else
+    {
+        bootWaitTime = BootConfig::waitForBootActionMs;
+    }
 
     while (true)
     {

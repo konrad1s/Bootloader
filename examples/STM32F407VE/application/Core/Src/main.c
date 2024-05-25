@@ -42,7 +42,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+static const uint32_t jumpToBootFlagValue = 0x5A5A5A5AU;
+static volatile uint32_t noInitBootFlag __attribute__((section (".no_init_ram"))) = 0U;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/

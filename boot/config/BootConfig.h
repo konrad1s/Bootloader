@@ -8,8 +8,8 @@ namespace BootConfig {
 
 constexpr char bootloaderVersion[] = "1.0.0";
 
-constexpr size_t waitForBootActionMs = 50000U;
-constexpr size_t actionBootExtensionMs = 50000U;
+constexpr size_t waitForBootActionMs = 50U;
+constexpr size_t actionBootExtensionMs = 10000U;
 
 constexpr char publicKey[] =
     "-----BEGIN PUBLIC KEY-----\n"

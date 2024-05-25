@@ -73,6 +73,7 @@ class Bootloader
     void SendNackResponse(packetType type);
 
     bool IsPresentFlagSet();
+    bool IsJumpToBootFlagSet();
     bool ValidateFirmware();
 
     void HandleValidPacket(const beecom::Packet& packet);
