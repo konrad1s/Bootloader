@@ -25,25 +25,17 @@ class SecureBoot
     };
 
     SecureBoot();
-    ~SecureBoot();
+    virtual ~SecureBoot();
 
-    RetStatus ValidateFirmware(
+    virtual RetStatus ValidateFirmware(
         const unsigned char* signature,
         size_t sig_len,
         const unsigned char* data,
-        size_t data_len);
+        size_t data_len) = 0;
 
-  private:
+    static const size_t hashSize = 32;
+
+  protected:
     unsigned char mbedtlsBuff[8192];
-    RetStatus ValidateFirmwareRSA(
-        const unsigned char* signature,
-        size_t sig_len,
-        const unsigned char* data,
-        size_t data_len);
-    RetStatus ValidateFirmwareECC(
-        const unsigned char* signature,
-        size_t sig_len,
-        const unsigned char* data,
-        size_t data_len);
     RetStatus CalculateSHA256(const unsigned char* data, size_t data_len, unsigned char* hash);
 };

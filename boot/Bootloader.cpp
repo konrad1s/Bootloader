@@ -3,6 +3,11 @@
 #include "Bootloader.h"
 #include "BootConfig.h"
 #include "AppJumper.h"
+#if (ECC_FIRMWARE_VALIDATION == 1)
+#include "SecureBootECC.h"
+#elif (RSA_FIRMWARE_VALIDATION == 1)
+#include "SecureBootRSA.h"
+#endif
 
 constexpr uint32_t applicationValidFlag = 0x5A5A5A5AU;
 
@@ -178,7 +183,11 @@ Bootloader::RetStatus Bootloader::HandleReadDataRequest(const beecom::Packet& pa
 
 bool Bootloader::ValidateFirmware()
 {
-    SecureBoot secureBoot;
+#if (ECC_FIRMWARE_VALIDATION == 1)
+    SecureBootECC secureBoot;
+#elif (RSA_FIRMWARE_VALIDATION == 1)
+    SecureBootRSA secureBoot;
+#endif
     SecureBoot::RetStatus sStatus = secureBoot.ValidateFirmware(
         reinterpret_cast<const unsigned char*>(FlashMapping::appSignatureAddress),
         FlashMapping::GetMetaData()->signatureSize,
@@ -233,8 +242,6 @@ void Bootloader::Boot()
 {
     uint32_t startTime = HAL_GetTick();
     uint32_t bootWaitTime;
-
-    volatile uint32_t bootFlag = *FlashMapping::GetJumpToBootFlag();
 
     if (IsJumpToBootFlagSet())
     {

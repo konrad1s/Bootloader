@@ -25,7 +25,7 @@ class AppJumper
     void DisableInterrupts() const
     {
         __disable_irq();
-        for (int i = 0U; i < 8U; ++i)
+        for (unsigned int i = 0U; i < 8U; ++i)
         {
             NVIC->ICER[i] = 0xFFFFFFFFU;
             NVIC->ICPR[i] = 0xFFFFFFFFU;

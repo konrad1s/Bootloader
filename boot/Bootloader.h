@@ -3,7 +3,6 @@
 #include <array>
 #include "BeeCom.h"
 #include "FlashManager.h"
-#include "SecureBoot.h"
 
 class Bootloader;
 

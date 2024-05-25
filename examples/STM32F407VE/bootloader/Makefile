@@ -93,6 +93,8 @@ $(BEECOM_DIR)/Src/BeeComBuffer.cpp \
 $(BOOT_DIR)/Bootloader.cpp	\
 $(BOOT_DIR)/BootPacketProcessor.cpp	\
 $(BOOT_DIR)/SecureBoot.cpp	\
+$(BOOT_DIR)/SecureBootECC.cpp	\
+$(BOOT_DIR)/SecureBootRSA.cpp	\
 $(BOOT_DIR)/portable/STM32F407VE/FlashManager.cpp	\
 
 # ASM sources

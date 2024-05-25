@@ -10,7 +10,7 @@ static constexpr uint32_t appSignatureMaxSize = 256U;
 static constexpr uint32_t maxDataSize = 16u;
 
 constexpr uint32_t bootFlagValue = 0xA5A5A5A5U;
-static volatile uint32_t noInitBootFlag __attribute__((section (".no_init_ram"))) = 0U;
+static volatile uint32_t noInitBootFlag __attribute__((section(".no_init_ram"))) = 0U;
 static constexpr uint32_t noInitSectionSize = 8U;
 
 struct MetaData
@@ -22,7 +22,6 @@ struct MetaData
     uint32_t appEndAddress;
     uint32_t appPresentFlag;
 } __attribute__((__packed__));
-
 
 inline MetaData* GetMetaData()
 {
