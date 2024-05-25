@@ -72,7 +72,8 @@ class FlashFirmwareThread(QThread):
 
     def _flash_app_addresses(self, app_start_address, app_end_address):
         logging.debug(f"Flashing application address: {app_start_address}, end address: {app_end_address}")
-        app_data_payload = (struct.pack('>I', 0x8020104) +
+        print(f"Flashing application address: {app_start_address}, end address: {app_end_address}")
+        app_data_payload = (struct.pack('>I', app_start_address - 0x100 + 0x4) +
                             struct.pack('<I', app_start_address) +
                             struct.pack('<I', app_end_address))
 

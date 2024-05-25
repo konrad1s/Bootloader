@@ -64,7 +64,7 @@ MEMORY
 RAM (xrw)           : ORIGIN = 0x20000000, LENGTH = 128K - 8 /* 8 bytes are reserved for the no_init section */
 NO_INIT_RAM (xrw)   : ORIGIN = 0x2001FFF0, LENGTH = 8
 CCMRAM (xrw)      : ORIGIN = 0x10000000, LENGTH = 64K
-FLASH (rx)      : ORIGIN = 0x8020200, LENGTH = 512K - 0x20200
+FLASH (rx)      : ORIGIN = 0x800C200, LENGTH = 512K - 0xC200
 }
 
 /* Define output sections */

@@ -2,10 +2,10 @@
 #include "stm32f4xx_hal.h"
 
 namespace FlashMapping {
-static constexpr uint32_t appMinStartAddress = 0x08020000U;
+static constexpr uint32_t appMinStartAddress = 0x0800C000U;
 static constexpr uint32_t appMaxEndAddress = 0x080FFFFFU;
 
-static constexpr uint32_t appMetaDataAddress = 0x08020000U;
+static constexpr uint32_t appMetaDataAddress = 0x0800C000U;
 static constexpr uint32_t appSignatureMaxSize = 256U;
 static constexpr uint32_t maxDataSize = 16u;
 
